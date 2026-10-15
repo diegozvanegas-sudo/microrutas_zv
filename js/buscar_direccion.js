@@ -40,14 +40,15 @@
 
   function normalizarDireccion(texto) {
     var t = ' ' + texto.trim() + ' ';
+    // La abreviatura debe ser la palabra completa (si no, "Carrera" quedaba "Carrera era")
     var reemplazos = [
-      [/\b(cra|kra|kr|cr|crr|carr|cra\.)\.?\s*/gi, 'Carrera '],
-      [/\b(cll|cl|calle)\.?\s*/gi, 'Calle '],
-      [/\b(tv|tr|trans|transv)\.?\s*/gi, 'Transversal '],
-      [/\b(dg|diag)\.?\s*/gi, 'Diagonal '],
-      [/\b(cq|circ)\.?\s*/gi, 'Circular '],
-      [/\b(av|avda)\.?\s*/gi, 'Avenida '],
-      [/\s*(#|no\.?|n°|nº)\s*/gi, ' # ']
+      [/\b(carrera|cra|kra|kr|cr|crr|carr)\b\.?\s*/gi, 'Carrera '],
+      [/\b(calle|cll|cl)\b\.?\s*/gi, 'Calle '],
+      [/\b(transversal|transv|trans|tv|tr)\b\.?\s*/gi, 'Transversal '],
+      [/\b(diagonal|diag|dg)\b\.?\s*/gi, 'Diagonal '],
+      [/\b(circular|circ|cq)\b\.?\s*/gi, 'Circular '],
+      [/\b(avenida|avda|av)\b\.?\s*/gi, 'Avenida '],
+      [/\s*(#|\bno\b\.?|n°|nº)\s*/gi, ' # ']
     ];
     reemplazos.forEach(function (r) { t = t.replace(r[0], r[1]); });
     t = t.replace(/\s+/g, ' ').trim();
@@ -69,7 +70,29 @@
     return v;
   }
 
+  // 1º ArcGIS (conoce las placas de Medellín: "Carrera 91D 72 159" -> punto exacto)
+  var TIPOS_EXACTOS = { PointAddress: 1, Subaddress: 1, StreetAddress: 1, StreetInt: 1 };
+  function geocodificarArcGIS(dir) {
+    var url = 'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates' +
+      '?f=json&countryCode=COL&maxLocations=1&outFields=Addr_type,Match_addr&location=-75.57,6.25' +
+      '&searchExtent=-75.72,6.10,-75.45,6.40' +                     // xmin,ymin,xmax,ymax
+      '&SingleLine=' + encodeURIComponent(dir.replace(/#/g, ' ') + ', Medellín, Antioquia');
+    return fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        var c = res && res.candidates && res.candidates[0];
+        if (!c || c.score < 80 || !TIPOS_EXACTOS[c.attributes.Addr_type]) return null;
+        return { lat: c.location.y, lon: c.location.x, etiqueta: c.address, exacta: true, fuente: 'ArcGIS' };
+      })
+      .catch(function () { return null; });
+  }
+
   function geocodificar(dir) {
+    return geocodificarArcGIS(dir).then(function (r) { return r || geocodificarOSM(dir); });
+  }
+
+  // 2º OpenStreetMap / Nominatim (solo conoce las vías, no las placas)
+  function geocodificarOSM(dir) {
     var intentos = variantesDireccion(dir);
     function intentar(i) {
       if (i >= intentos.length) return Promise.resolve(null);
@@ -80,7 +103,7 @@
         .then(function (res) {
           if (res && res.length) {
             return { lat: parseFloat(res[0].lat), lon: parseFloat(res[0].lon),
-                     etiqueta: res[0].display_name, exacta: i === 0 };
+                     etiqueta: res[0].display_name, exacta: false, fuente: 'OSM' };
           }
           return intentar(i + 1);
         });
@@ -149,6 +172,7 @@
     return '<b>' + (p.Microruta || 'Sin microrruta') + '</b> · lote ' + (p.No_Lote || 'NA') +
       ' · cuadrilla ' + (p.CUADRILLA || '-') +
       (r.dentro ? '' : ' <span style="color:#b45309">(a ' + Math.round(r.dist) + ' m)</span>') +
+      (window.enlacesComoLlegar ? ' ' + window.enlacesComoLlegar(r.feature, true) : '') +
       '<br><small>' + arreglarTexto(p.Descripcio) + '</small>';
   }
 
@@ -166,6 +190,7 @@
         res.map(textoLote).join('<br>');
       resaltar(res[0].feature);
     }
+    if (window.extraPuntoLote) html += window.extraPuntoLote(lat, lon, res);   // js/herramientas.js
     html += '<br><a href="https://www.google.com/maps?q=' + lat + ',' + lon + '" target="_blank">Abrir en Google Maps</a></div>';
     if (marcadorDireccion) map.removeLayer(marcadorDireccion);
     marcadorDireccion = L.marker([lat, lon]).addTo(map).bindPopup(html, { maxWidth: 300 }).openPopup();
@@ -184,14 +209,20 @@
         alert('No encontré esa dirección en OpenStreetMap. Pruebe con el cruce (ej.: "Carrera 65 con Calle 84") o pegue el link de Google Maps.');
         return;
       }
-      mostrar(r.lat, r.lon, dir, r.exacta ? 'Ubicación aproximada (OpenStreetMap)' :
-        'No encontré la placa exacta; se muestra la vía o el cruce más cercano.');
+      mostrar(r.lat, r.lon, dir, r.exacta ? 'Placa encontrada: ' + r.etiqueta :
+        'No encontré la placa exacta; se muestra la vía o el cruce más cercano (OpenStreetMap). ' +
+        'Para un punto exacto pegue el link de Google Maps.');
     }).catch(function () {
       alert('No se pudo consultar el servicio de direcciones. Revise la conexión o pegue el link de Google Maps.');
     }).then(function () {
       if (boton) { boton.disabled = false; boton.textContent = 'Buscar'; }
     });
   };
+
+  // Para js/herramientas.js ("¿Qué lote es aquí?")
+  window.buscarLote = buscarLote;
+  window.mostrarPuntoLote = mostrar;
+  window.distanciaM = distanciaM;
 
   // Clic derecho / pulsación larga en el mapa: ¿qué lote es este punto?
   if (window.map) map.on('contextmenu', function (e) { mostrar(e.latlng.lat, e.latlng.lng, 'Punto seleccionado'); });

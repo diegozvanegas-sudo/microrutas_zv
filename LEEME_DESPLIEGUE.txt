@@ -6,10 +6,52 @@ Qué tiene de nuevo
   Acepta:
     * Link de Google Maps (lo más exacto)
     * Coordenadas: 6.2844, -75.5980   ó   6.2529N 75.6182W
-    * Dirección: Carrera 91D #72-159, Cr 65 con Cl 84 (aproximada, usa OpenStreetMap)
+    * Dirección: Carrera 91D #72-159, Cr 65 con Cl 84 (busca la placa exacta con ArcGIS;
+      si no la encuentra, usa OpenStreetMap y muestra la vía o el cruce aproximado)
   Pone un marcador y dice en qué microrruta/lote cae el punto, o los 3 más cercanos con la distancia.
 - Clic derecho (o pulsación larga en el celular) en cualquier punto del mapa: dice qué lote es.
-- Archivos cambiados: index.html (4 líneas) y js/buscar_direccion.js (nuevo).
+- Ventana del lote (al hacer clic en un polígono): ahora muestra Microrruta, Lote, Zona, Cuadrilla,
+  Área, Frecuencia, Dirección y Descripción, más un enlace "Ver dirección en Google Maps".
+  Antes salía "Zona: undefined" porque el campo no existe en los datos; la zona se toma del código
+  de la microrruta (Z5... = zona 5).
+- Las direcciones salen de data/direcciones_lotes.js (generado de la programación CLUS ago-oct 2026,
+  1.146 microrrutas). Si llega una programación nueva, se puede regenerar ese archivo.
+- Comuna y dirección de respaldo: data/direcciones_fid.js trae la comuna de cada polígono y, para los
+  365 polígonos sin microrruta, la dirección sacada de su descripción o, si no tiene, sus coordenadas.
+  Resultado: 8.055 de 8.060 polígonos muestran dirección (los 5 restantes no tienen geometría).
+- Archivos cambiados: index.html, js/buscar_direccion.js, data/direcciones_lotes.js y data/direcciones_fid.js (nuevos).
+
+HERRAMIENTAS DE OPERACIÓN (js/herramientas.js)
+- Panel de filtros (botón ☰):
+    * Filtros nuevos: Microrruta y Frecuencia. Zona y Comuna ahora sí filtran (antes no hacían nada).
+    * "Resumen de lo visible": lotes, microrrutas, m², estado y tabla por cuadrilla del filtro actual.
+    * "Colorear por": cuadrilla, frecuencia o estado (vencido / esta semana / al día / sin registro).
+    * "Qué toca esta semana": microrrutas vencidas y las que tocan hasta el domingo, con botón Ver
+      y Excel de lo pendiente. Se calcula con la última intervención registrada + la frecuencia
+      (Quincenal 15 días, Mensual 30; se cambia en js/configuracion.js).
+    * "Descargar Excel (CSV) de lo visible" (se abre en Excel; separado por punto y coma).
+    * "Registros y hoja compartida": nombre de quien registra, copia de seguridad, hoja compartida.
+- Botones nuevos en el mapa:
+    * 🎯 ¿Qué lote es aquí?: usa el GPS del celular. Si hay una cuadrilla filtrada, dice además su lote
+      más cercano y su pendiente más cercano.
+    * ⬚ Seleccionar área: arrastrar un recuadro; da lotes, m² y cuadrillas, y permite agregar esos
+      lotes al KML o descargarlos en Excel.
+- Ventana del lote: "Cómo llegar" (Google Maps / Waze), estado, última intervención, y botones
+  "Lote intervenido hoy" / "Toda la microrruta", con nota y foto opcionales.
+- Clic en una comuna (activar la capa Comunas): resumen por cuadrilla, filtrar o descargar Excel.
+- Textos reparados: se corrigieron las tildes dañadas ("pï¿½blica", "direcciÃ³n") en los datos de lotes,
+  Rutas SIF y Operativos. Quedan ~50 textos con errores de escritura del original; salen con "?".
+
+REGISTROS COMPARTIDOS (opcional pero recomendado)
+- Sin configurar nada, cada celular guarda sus registros solo para sí (se pierden si se borra el
+  navegador; use "Descargar copia").
+- Para que todos vean en tiempo real (≈1 minuto) lo que marcan los demás, con fotos:
+    1. Abra integraciones/registro_apps_script.gs y siga los 5 pasos de arriba del archivo
+       (hoja de Google + Apps Script, gratis con una cuenta de Google).
+    2. Pegue la URL que termina en /exec y la clave en js/configuracion.js (registroUrl y clave),
+       y vuelva a subir ese archivo a GitHub.
+  Las filas quedan en la hoja "Registros" (historial completo) y las fotos en la carpeta de Drive
+  "Microrrutas - fotos". Si no hay internet, el celular guarda los envíos y los manda al volver.
 
 Cómo publicarlo en GitHub Pages (gratis)
 1. Entrar a https://github.com con su cuenta (o crearla).
@@ -22,6 +64,7 @@ Cómo publicarlo en GitHub Pages (gratis)
 6. En 1-2 minutos queda en: https://SU_USUARIO.github.io/microrutas_zv/
 
 Probarlo en el computador sin publicar
+- IMPORTANTE: borre la carpeta de la versión anterior y descomprima este zip de nuevo; luego recargue con Ctrl+F5.
 - Abrir una terminal en esta carpeta y ejecutar:  python -m http.server 8000
 - Abrir en el navegador:  http://localhost:8000
   (Abrir index.html con doble clic también funciona, salvo la búsqueda de direcciones escritas.)

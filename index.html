@@ -62,7 +62,7 @@
           .search-panel { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 8px; right: 8px; width: auto; max-height: calc(100dvh - 16px); overflow-y: auto; -webkit-overflow-scrolling: touch; z-index: 2000; }
         }
         </style>
-        <title></title>
+        <title>Mapa de microrrutas</title>
     </head>
     <body>
         <div id="map">
@@ -82,6 +82,8 @@
         <script src="js/tailDT.js"></script>
 <script src="js/nouislider.min.js"></script>
 <script src="js/wNumb.js"></script>
+        <script src="data/direcciones_lotes.js"></script>
+        <script src="data/direcciones_fid.js"></script>
         <script src="data/zonasverdes__areas_zonas_verdes_2.js"></script>
         <script src="data/Rutas_SIF_3.js"></script>
         <script src="data/Operativos_4.js"></script>
@@ -91,6 +93,45 @@
         }).fitBounds([[6.163360927469683,-75.63565577029958],[6.236503168185557,-75.50220970704044]]);
         var hash = new L.Hash(map);
         map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        // Ventana del lote: microrruta, lote, zona, cuadrilla, área, dirección y descripción
+        function arreglarTildes(s) {
+            s = String(s == null ? '' : s);
+            try { return /Ã|Â/.test(s) ? decodeURIComponent(escape(s)) : s; } catch (e) { return s; }
+        }
+        function popupLote(feature) {
+            var p = feature.properties || {};
+            var mr = p.Microruta ? String(p.Microruta).trim() : '';
+            var prog = (window.direccionesLotes && mr) ? window.direccionesLotes[mr] : null;
+            var zona = /^Z(\d+)/i.test(mr) ? mr.match(/^Z(\d+)/i)[1] : '';
+            var extra = (window.extrasLotes && p.fid != null) ? window.extrasLotes[p.fid] : null;
+            var direccion = p.DIRECCION || (prog && prog.d) || (extra && extra.d) || '';
+            var dañada = /ï¿½|\uFFFD/.test(String(p.Descripcio || ''));
+            var descripcion = (dañada && prog && prog.desc) ? prog.desc :
+                arreglarTildes(p.Descripcio || (prog && prog.desc) || '').replace(/ï¿½|\uFFFD/g, '?');
+            var area = p.Area_campo || (p.Area_m2 ? Math.round(p.Area_m2) : '');
+            function fila(titulo, valor) {
+                if (valor === null || valor === undefined || String(valor).trim() === '') return '';
+                return '<tr><td colspan="2"><strong>' + titulo + '</strong><br />' + String(valor).replace(/</g, '&lt;') + '</td></tr>';
+            }
+            var html = '<table>' +
+                fila('Microrruta', mr) +
+                fila('Lote', p.No_Lote) +
+                fila('Zona', zona) +
+                fila('Comuna', extra && extra.c) +
+                fila('Cuadrilla', p.CUADRILLA) +
+                fila('Área (m²)', area) +
+                fila('Frecuencia', prog && prog.frec) +
+                fila('Dirección', direccion) +
+                fila('Descripción', descripcion) +
+                '</table>';
+            if (direccion || descripcion) {
+                html += '<p style="margin:6px 0 0"><a href="https://www.google.com/maps?q=' +
+                    encodeURIComponent((direccion || descripcion).split('.')[0] + ', Medellín') + '" target="_blank">Ver dirección en Google Maps</a></p>';
+            }
+            var coord = String(direccion).match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)\s*$/);
+            if (coord) html = html.replace(/https:\/\/www\.google\.com\/maps\?q=[^"]*/, 'https://www.google.com/maps?q=' + coord[1] + ',' + coord[2]);
+            return html;
+        }
         var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
         function actualizarFiltros(){
 		filterFunc();
@@ -277,24 +318,7 @@ botonLotes.addTo(map);
             document.head.appendChild(script);
         }
         function pop_zonasverdes__areas_zonas_verdes_2(feature, layer) {
-            var popupContent = '<table>\
-                    <tr>\
-                        <th scope="row">Descripcion</th>\
-                        <td class="visible-with-data" id="Descripcion">' + (feature.properties['Descripcion'] !== null ? autolinker.link(String(feature.properties['Descripcion']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2"><strong>No_Lote</strong><br />' + (feature.properties['No_Lote'] !== null ? autolinker.link(String(feature.properties['No_Lote']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td class="visible-with-data" id="Area_campo" colspan="2"><strong>Area_campo</strong><br />' + (feature.properties['Area_campo'] !== null ? autolinker.link(String(feature.properties['Area_campo']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2"><strong>Microruta</strong><br />' + (feature.properties['Microruta'] !== null ? autolinker.link(String(feature.properties['Microruta']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                    <tr>\
-                        <td colspan="2"><strong>Zona</strong><br />' + (feature.properties['Zona'] !== null ? autolinker.link(String(feature.properties['Zona']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
-                    </tr>\
-                </table>';
+            var popupContent = popupLote(feature);
             var content = removeEmptyRowsFromPopupContent(popupContent, feature);
 			layer.on('popupopen', function(e) {
 				addClassToPopupIfMedia(content, e.popup);
@@ -1924,5 +1948,7 @@ function updateSelect(id, values){
             updateDynamicFilters();
         </script>        
         <script src="js/buscar_direccion.js"></script>
+        <script src="js/configuracion.js"></script>
+        <script src="js/herramientas.js"></script>
     </body>
 </html>
