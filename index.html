@@ -124,13 +124,56 @@
                 fila('Dirección', direccion) +
                 fila('Descripción', descripcion) +
                 '</table>';
-            if (direccion || descripcion) {
-                html += '<p style="margin:6px 0 0"><a href="https://www.google.com/maps?q=' +
-                    encodeURIComponent((direccion || descripcion).split('.')[0] + ', Medellín') + '" target="_blank">Ver dirección en Google Maps</a></p>';
-            }
+            // El enlace usa las coordenadas del lote: buscar el texto de la dirección lleva a sitios equivocados
+            var punto = puntoLote(feature);
             var coord = String(direccion).match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)\s*$/);
-            if (coord) html = html.replace(/https:\/\/www\.google\.com\/maps\?q=[^"]*/, 'https://www.google.com/maps?q=' + coord[1] + ',' + coord[2]);
+            if (coord) punto = [Number(coord[1]), Number(coord[2])];
+            if (punto) {
+                html += '<p style="margin:6px 0 0"><a href="https://www.google.com/maps/search/?api=1&query=' +
+                    punto[0].toFixed(6) + ',' + punto[1].toFixed(6) + '" target="_blank">Ver lote en Google Maps</a></p>';
+            }
             return html;
+        }
+        // Punto [lat, lon] dentro del lote: el centro si cae dentro del polígono; si no, el vértice más cercano al centro.
+        // Si el lote tiene varias partes (varias direcciones), se usa la parte más grande.
+        function puntoLote(feature) {
+            var g = feature && feature.geometry;
+            if (!g || !g.coordinates) return null;
+            var poligonos = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : null;
+            if (!poligonos || !poligonos.length) return null;
+            function areaAnillo(r) {
+                var a = 0;
+                for (var i = 0, j = r.length - 1; i < r.length; j = i++) a += (r[j][0] + r[i][0]) * (r[j][1] - r[i][1]);
+                return Math.abs(a / 2);
+            }
+            var anillo = null, mayor = -1;
+            poligonos.forEach(function(pol) {
+                if (pol && pol[0] && pol[0].length) {
+                    var a = areaAnillo(pol[0]);
+                    if (a > mayor) { mayor = a; anillo = pol[0]; }
+                }
+            });
+            if (!anillo) return null;
+            var a2 = 0, cx = 0, cy = 0;
+            for (var i = 0, j = anillo.length - 1; i < anillo.length; j = i++) {
+                var f = anillo[j][0] * anillo[i][1] - anillo[i][0] * anillo[j][1];
+                a2 += f; cx += (anillo[j][0] + anillo[i][0]) * f; cy += (anillo[j][1] + anillo[i][1]) * f;
+            }
+            if (a2 !== 0) { cx /= 3 * a2; cy /= 3 * a2; } else { cx = anillo[0][0]; cy = anillo[0][1]; }
+            var dentro = false;
+            for (var k = 0, m = anillo.length - 1; k < anillo.length; m = k++) {
+                var xi = anillo[k][0], yi = anillo[k][1], xj = anillo[m][0], yj = anillo[m][1];
+                if ((yi > cy) !== (yj > cy) && cx < (xj - xi) * (cy - yi) / (yj - yi) + xi) dentro = !dentro;
+            }
+            if (!dentro) {
+                var mejor = anillo[0], dmin = Infinity;
+                anillo.forEach(function(v) {
+                    var d = (v[0] - cx) * (v[0] - cx) + (v[1] - cy) * (v[1] - cy);
+                    if (d < dmin) { dmin = d; mejor = v; }
+                });
+                cx = mejor[0]; cy = mejor[1];
+            }
+            return [cy, cx];
         }
         var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
         function actualizarFiltros(){

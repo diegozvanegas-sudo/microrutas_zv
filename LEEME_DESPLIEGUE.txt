@@ -11,7 +11,7 @@ Qué tiene de nuevo
   Pone un marcador y dice en qué microrruta/lote cae el punto, o los 3 más cercanos con la distancia.
 - Clic derecho (o pulsación larga en el celular) en cualquier punto del mapa: dice qué lote es.
 - Ventana del lote (al hacer clic en un polígono): ahora muestra Microrruta, Lote, Zona, Cuadrilla,
-  Área, Frecuencia, Dirección y Descripción, más un enlace "Ver dirección en Google Maps".
+  Área, Frecuencia, Dirección y Descripción, más un enlace "Ver lote en Google Maps" que abre las coordenadas del lote (no busca el texto de la dirección).
   Antes salía "Zona: undefined" porque el campo no existe en los datos; la zona se toma del código
   de la microrruta (Z5... = zona 5).
 - Las direcciones salen de data/direcciones_lotes.js (generado de la programación CLUS ago-oct 2026,
