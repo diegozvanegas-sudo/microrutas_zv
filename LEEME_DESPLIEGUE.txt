@@ -1,0 +1,32 @@
+MAPA DE MICRORRUTAS - COPIA CON BÚSQUEDA POR DIRECCIÓN
+=====================================================
+
+Qué tiene de nuevo
+- En el buscador (lupa) hay una opción nueva: "Dirección / coordenadas / link de Google Maps".
+  Acepta:
+    * Link de Google Maps (lo más exacto)
+    * Coordenadas: 6.2844, -75.5980   ó   6.2529N 75.6182W
+    * Dirección: Carrera 91D #72-159, Cr 65 con Cl 84 (aproximada, usa OpenStreetMap)
+  Pone un marcador y dice en qué microrruta/lote cae el punto, o los 3 más cercanos con la distancia.
+- Clic derecho (o pulsación larga en el celular) en cualquier punto del mapa: dice qué lote es.
+- Archivos cambiados: index.html (4 líneas) y js/buscar_direccion.js (nuevo).
+
+Cómo publicarlo en GitHub Pages (gratis)
+1. Entrar a https://github.com con su cuenta (o crearla).
+2. Botón "New" -> nombre del repositorio, p. ej. microrutas_zv -> Public -> Create repository.
+3. En el repositorio nuevo: "uploading an existing file" -> arrastrar TODO el contenido de esta
+   carpeta (index.html, css, data, images, js, legend, webfonts...). No la carpeta, su contenido.
+   Nota: GitHub web acepta archivos de hasta 25 MB; el más grande aquí pesa 16 MB, así que sirve.
+4. "Commit changes".
+5. Settings -> Pages -> Source: "Deploy from a branch" -> Branch: main / (root) -> Save.
+6. En 1-2 minutos queda en: https://SU_USUARIO.github.io/microrutas_zv/
+
+Probarlo en el computador sin publicar
+- Abrir una terminal en esta carpeta y ejecutar:  python -m http.server 8000
+- Abrir en el navegador:  http://localhost:8000
+  (Abrir index.html con doble clic también funciona, salvo la búsqueda de direcciones escritas.)
+
+Actualizar los lotes más adelante
+- Los polígonos están en data/zonasverdes__areas_zonas_verdes_2.js. Si exportan de nuevo desde
+  QGIS con qgis2web, basta reemplazar ese archivo (y volver a agregar las 4 líneas de index.html
+  y js/buscar_direccion.js si se regenera todo el mapa).

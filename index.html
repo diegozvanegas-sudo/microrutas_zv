@@ -1,0 +1,1928 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        :root { --brand: #167a55; --ink: #1f2937; --line: #dce4e8; --surface: #ffffff; }
+        body { font-family: "Segoe UI", Arial, sans-serif; color: var(--ink); background: #f3f6f5; }
+        #all { display: flex; gap: 12px; box-sizing: border-box; padding: 12px; background: #f3f6f5; }
+        #mapWindow { width: auto !important; flex: 1; min-width: 0; height: 100% !important; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 24px rgba(15, 45, 35, .12); }
+        #menu { width: 320px !important; height: auto !important; overflow-y: auto; padding: 16px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 8px 24px rgba(15, 45, 35, .08); }
+        #menu.is-collapsed { width: 52px !important; overflow: visible; padding: 8px; }
+        #menu.is-collapsed > :not(.filters-toggle) { display: none; }
+        .filters-toggle { width: 100%; min-height: 36px; border: 0; border-radius: 9px; color: var(--brand); background: #edf8f3; font: inherit; font-size: 18px; cursor: pointer; }
+        #menu:not(.is-collapsed) .filters-toggle { margin-bottom: 12px; font-size: 13px; font-weight: 650; }
+        .kml-download { width: 100%; margin: 0 0 14px; padding: 9px 12px; border: 0; border-radius: 8px; color: #fff; background: var(--brand); font: inherit; font-weight: 650; cursor: pointer; }
+        .kml-download:disabled { color: #94a3b8; background: #e2e8f0; cursor: not-allowed; }
+        .panel-title { margin: 0 0 14px; font-size: 18px; font-weight: 700; color: var(--ink); }
+        .panel-subtitle { margin: -8px 0 16px; font-size: 12px; color: #64748b; }
+        .filterselect { margin: 0 0 16px !important; padding: 0 !important; border: 0 !important; }
+        .filterselect select, .filterselect input { width: 100%; min-height: 38px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; padding: 6px; color: var(--ink); background: white; }
+        .filterlabel { font-size: 12px; font-weight: 650; color: #475569; margin-top: 6px; }
+        .filterlabel:last-child { color: var(--brand); cursor: pointer; font-weight: 600; }
+        .leaflet-bar a, .leaflet-control-layers { border-radius: 9px !important; box-shadow: 0 4px 14px rgba(15, 45, 35, .16); }
+        .leaflet-bar a { color: var(--ink); }
+        .leaflet-bar a:hover { color: var(--brand); background: #edf8f3; }
+        .search-control { position: relative; }
+        .search-control > a { font-size: 18px; line-height: 30px; text-align: center; }
+        .search-panel { display: none; position: absolute; top: 0; left: 38px; width: 270px; padding: 14px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 28px rgba(15, 45, 35, .2); }
+        .search-panel.is-open { display: block; }
+        .search-panel h2 { margin: 0 0 5px; font-size: 15px; }
+        .search-panel p { margin: 0 0 10px; font-size: 12px; color: #64748b; line-height: 1.35; }
+        .search-panel select, .search-panel input, .search-panel button { width: 100%; box-sizing: border-box; font: inherit; border-radius: 8px; }
+        .search-panel select, .search-panel input { border: 1px solid var(--line); padding: 8px; color: var(--ink); background: #fff; }
+        .search-panel select { height: 88px; margin-bottom: 8px; }
+        .search-panel input { margin-bottom: 8px; }
+        .search-panel button { border: 0; padding: 9px 12px; color: #fff; background: var(--brand); font-weight: 650; cursor: pointer; }
+        .search-panel button:hover { background: #0f6847; }
+        @media (max-width: 760px) {
+          #all { position: relative; display: block; padding: 8px; }
+          #mapWindow { width: 100% !important; height: 100% !important; }
+          #menu { position: absolute; right: 8px; bottom: 8px; z-index: 1000; width: calc(100% - 16px) !important; max-height: min(46dvh, 360px); padding: 12px; border-radius: 12px; }
+          #menu.is-collapsed { width: 44px !important; height: 44px !important; min-height: 44px; padding: 4px; }
+          .filters-toggle { min-height: 36px; }
+          .search-panel { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 8px; right: 8px; width: auto; max-height: calc(100dvh - 16px); overflow-y: auto; -webkit-overflow-scrolling: touch; z-index: 2000; }
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/zonasverdes__areas_zonas_verdes_2.js"></script>
+        <script src="data/Rutas_SIF_3.js"></script>
+        <script src="data/Operativos_4.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[6.163360927469683,-75.63565577029958],[6.236503168185557,-75.50220970704044]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        function actualizarFiltros(){
+		filterFunc();
+		}		
+		// remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // modify popup if contains media
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var imgTd = tempDiv.querySelector('td img');
+            if (imgTd) {
+                var src = imgTd.getAttribute('src');
+                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
+                    var audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = src;
+                    imgTd.parentNode.replaceChild(audio, imgTd);
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
+                    var video = document.createElement('video');
+                    video.controls = true;
+                    video.src = src;
+                    video.style.width = "400px";
+                    video.style.height = "300px";
+                    video.style.maxHeight = "60vh";
+                    video.style.maxWidth = "60vw";
+                    imgTd.parentNode.replaceChild(video, imgTd);
+                    popup._contentNode.classList.add('media');
+                    // Aggiorna il popup quando il video carica i metadati
+                    video.addEventListener('loadedmetadata', function() {
+                        popup.update();
+                    });
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else {
+                    popup._contentNode.classList.remove('media');
+                }
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+		var panelBusqueda;
+        function cerrarBuscador() {
+            if(panelBusqueda) panelBusqueda.classList.remove('is-open');
+        }
+        function cerrarFiltros() {
+            var menu = document.getElementById('menu');
+            var boton = menu && menu.querySelector('.filters-toggle');
+            if(!menu || menu.classList.contains('is-collapsed')) return;
+            menu.classList.add('is-collapsed');
+            if(boton) {
+                boton.setAttribute('aria-expanded', 'false');
+                boton.title = 'Abrir filtros';
+                boton.textContent = '☰';
+            }
+            setTimeout(function(){ map.invalidateSize(); }, 180);
+        }
+		var botonLotes = L.control({position:'topleft'});
+
+botonLotes.onAdd = function(map){
+    var div = L.DomUtil.create('div', 'leaflet-bar search-control');
+    div.innerHTML = '<a href="#" class="search-toggle" title="Buscar">&#128269;</a>' +
+        '<section class="search-panel" aria-label="Buscar en el mapa">' +
+        '<h2>Buscar en el mapa</h2>' +
+        '<p>Seleccione uno o varios campos y escriba valores separados por coma. Para ubicar un punto elija <b>Dirección</b> y escriba la dirección, las coordenadas o pegue el link de Google Maps.</p>' +
+        '<select id="search-types" multiple aria-label="Campos de búsqueda">' +
+        '<option value="lote" selected>Lote</option><option value="microruta">Microruta</option><option value="espartillos">Espartillos</option><option value="direccion">Dirección / coordenadas / link de Google Maps</option>' +
+        '</select><input id="search-values" type="search" placeholder="Ej.: 101, 202, ABC" aria-label="Valores separados por coma">' +
+        '<button type="button" id="search-submit">Buscar</button></section>';
+    L.DomEvent.disableClickPropagation(div);
+    L.DomEvent.disableScrollPropagation(div);
+    panelBusqueda = div.querySelector('.search-panel');
+    div.querySelector('.search-toggle').onclick = function(event) {
+        L.DomEvent.preventDefault(event);
+        cerrarFiltros();
+        panelBusqueda.classList.toggle('is-open');
+        if(panelBusqueda.classList.contains('is-open')) div.querySelector('#search-values').focus();
+    };
+    div.querySelector('#search-submit').onclick = buscarValoresSeleccionados;
+    div.querySelector('#search-values').onkeydown = function(event) {
+        if(event.key === 'Enter') buscarValoresSeleccionados();
+    };
+    return div;
+};
+
+botonLotes.addTo(map);
+		
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_GoogleSatellite_0');
+        map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
+        var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_GoogleSatellite_0;
+        map.addLayer(layer_GoogleSatellite_0);
+        function pop_Comunas_1(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>NOMBRE</strong><br />' + (feature.properties['NOMBRE'] !== null ? autolinker.link(String(feature.properties['NOMBRE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Comunas_1_0() {
+            return {
+                pane: 'pane_Comunas_1',
+                opacity: 1,
+                color: 'rgba(228,26,28,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 2.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Comunas_1');
+        map.getPane('pane_Comunas_1').style.zIndex = 401;
+        map.getPane('pane_Comunas_1').style['mix-blend-mode'] = 'normal';
+        var layer_Comunas_1 = L.layerGroup();
+        var comunasCargadas = false;
+        function cargarComunas() {
+            if(comunasCargadas) return;
+            comunasCargadas = true;
+            var script = document.createElement('script');
+            script.src = 'data/Comunas_1.js';
+            script.onload = function() {
+                layer_Comunas_1.addLayer(new L.geoJson(json_Comunas_1, {
+                    attribution: '', interactive: true, pane: 'pane_Comunas_1',
+                    onEachFeature: pop_Comunas_1, style: style_Comunas_1_0
+                }));
+            };
+            document.head.appendChild(script);
+        }
+        function pop_zonasverdes__areas_zonas_verdes_2(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Descripcion</th>\
+                        <td class="visible-with-data" id="Descripcion">' + (feature.properties['Descripcion'] !== null ? autolinker.link(String(feature.properties['Descripcion']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>No_Lote</strong><br />' + (feature.properties['No_Lote'] !== null ? autolinker.link(String(feature.properties['No_Lote']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Area_campo" colspan="2"><strong>Area_campo</strong><br />' + (feature.properties['Area_campo'] !== null ? autolinker.link(String(feature.properties['Area_campo']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Microruta</strong><br />' + (feature.properties['Microruta'] !== null ? autolinker.link(String(feature.properties['Microruta']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Zona</strong><br />' + (feature.properties['Zona'] !== null ? autolinker.link(String(feature.properties['Zona']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			
+			layer.on({
+    click: seleccionarLote
+});
+
+			layer.bindPopup(content, { maxHeight: 400 });
+			
+        }
+
+        var coloresCuadrilla = ['#16a34a', '#2563eb', '#dc2626', '#9333ea', '#ea580c', '#0891b2', '#be123c', '#4d7c0f', '#ca8a04', '#0f766e'];
+        function colorCuadrilla(valor) {
+            var texto = String(valor == null ? 'Sin cuadrilla' : valor).trim();
+            var numero = Number(texto);
+            if(Number.isFinite(numero)) return coloresCuadrilla[Math.abs(numero) % coloresCuadrilla.length];
+            var hash = 0;
+            for(var i = 0; i < texto.length; i++) hash = ((hash << 5) - hash) + texto.charCodeAt(i);
+            return coloresCuadrilla[Math.abs(hash) % coloresCuadrilla.length];
+        }
+        function style_zonasverdes__areas_zonas_verdes_2_0(feature) {
+            var color = colorCuadrilla(feature && feature.properties ? feature.properties.CUADRILLA : null);
+            return {
+                pane: 'pane_zonasverdes__areas_zonas_verdes_2',
+                opacity: 0.95,
+                color: color,
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 0.62,
+                fillColor: color,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_zonasverdes__areas_zonas_verdes_2');
+        map.getPane('pane_zonasverdes__areas_zonas_verdes_2').style.zIndex = 402;
+        map.getPane('pane_zonasverdes__areas_zonas_verdes_2').style['mix-blend-mode'] = 'normal';
+        var layer_zonasverdes__areas_zonas_verdes_2 = new L.geoJson(json_zonasverdes__areas_zonas_verdes_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_zonasverdes__areas_zonas_verdes_2',
+            layerName: 'layer_zonasverdes__areas_zonas_verdes_2',
+            pane: 'pane_zonasverdes__areas_zonas_verdes_2',
+            onEachFeature: pop_zonasverdes__areas_zonas_verdes_2,
+            style: style_zonasverdes__areas_zonas_verdes_2_0,
+        });
+        bounds_group.addLayer(layer_zonasverdes__areas_zonas_verdes_2);
+        map.addLayer(layer_zonasverdes__areas_zonas_verdes_2);
+        function pop_Rutas_SIF_3(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>Descripcion</strong><br />' + (feature.properties['Descripcion'] !== null ? autolinker.link(String(feature.properties['Descripcion']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>area_estimada</strong><br />' + (feature.properties['area_estimada'] !== null ? autolinker.link(String(feature.properties['area_estimada']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Rutas_SIF_3_0() {
+            return {
+                pane: 'pane_Rutas_SIF_3',
+                opacity: 1,
+                color: 'rgba(229,242,20,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 3.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Rutas_SIF_3');
+        map.getPane('pane_Rutas_SIF_3').style.zIndex = 403;
+        map.getPane('pane_Rutas_SIF_3').style['mix-blend-mode'] = 'normal';
+        var layer_Rutas_SIF_3 = new L.geoJson(json_Rutas_SIF_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Rutas_SIF_3',
+            layerName: 'layer_Rutas_SIF_3',
+            pane: 'pane_Rutas_SIF_3',
+            onEachFeature: pop_Rutas_SIF_3,
+            style: style_Rutas_SIF_3_0,
+        });
+        bounds_group.addLayer(layer_Rutas_SIF_3);
+        map.addLayer(layer_Rutas_SIF_3);
+        function pop_Operativos_4(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Descripcion</th>\
+                        <td class="visible-with-data" id="Descripcion">' + (feature.properties['Descripcion'] !== null ? autolinker.link(String(feature.properties['Descripcion']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>No_Lote</strong><br />' + (feature.properties['No_Lote'] !== null ? autolinker.link(String(feature.properties['No_Lote']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Area_campo</strong><br />' + (feature.properties['Area_campo'] !== null ? autolinker.link(String(feature.properties['Area_campo']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+		
+		function seleccionarLote(e){
+
+    var layer = e.target;
+
+    layer.setStyle({
+        color:'#ff0000',
+        weight:3,
+        fillColor:'#ffff00',
+        fillOpacity:0.7
+    });
+
+}
+
+        function style_Operativos_4_0() {
+            return {
+                pane: 'pane_Operativos_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.4)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(237,171,21,0.4)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Operativos_4');
+        map.getPane('pane_Operativos_4').style.zIndex = 404;
+        map.getPane('pane_Operativos_4').style['mix-blend-mode'] = 'normal';
+        var layer_Operativos_4 = new L.geoJson(json_Operativos_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Operativos_4',
+            layerName: 'layer_Operativos_4',
+            pane: 'pane_Operativos_4',
+            onEachFeature: pop_Operativos_4,
+            style: style_Operativos_4_0,
+        });
+        bounds_group.addLayer(layer_Operativos_4);
+        map.addLayer(layer_Operativos_4);
+        /* Capa sif_areas retirada de la publicación. */
+        if(false) {
+        function pop_sif_areas_5(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>Area_campo</strong><br />' + (feature.properties['Area_campo'] !== null ? autolinker.link(String(feature.properties['Area_campo']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Descripcion_si</strong><br />' + (feature.properties['Descripcion_si'] !== null ? autolinker.link(String(feature.properties['Descripcion_si']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_sif_areas_5_0() {
+            return {
+                pane: 'pane_sif_areas_5',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.5)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(242,33,195,0.5)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_sif_areas_5');
+        map.getPane('pane_sif_areas_5').style.zIndex = 405;
+        map.getPane('pane_sif_areas_5').style['mix-blend-mode'] = 'normal';
+        var layer_sif_areas_5 = new L.geoJson(json_sif_areas_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_sif_areas_5',
+            layerName: 'layer_sif_areas_5',
+            pane: 'pane_sif_areas_5',
+            onEachFeature: pop_sif_areas_5,
+            style: style_sif_areas_5_0,
+        });
+        bounds_group.addLayer(layer_sif_areas_5);
+        map.addLayer(layer_sif_areas_5);
+        }
+        function pop_Espartillos_6(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td class="visible-with-data" id="area" colspan="2"><strong>area</strong><br />' + (feature.properties['area'] !== null ? autolinker.link(String(feature.properties['area']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Descripci" colspan="2"><strong>Descripci</strong><br />' + (feature.properties['Descripci'] !== null ? autolinker.link(String(feature.properties['Descripci']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Direccion" colspan="2"><strong>Direccion</strong><br />' + (feature.properties['Direccion'] !== null ? autolinker.link(String(feature.properties['Direccion']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Codigo</strong><br />' + (feature.properties['Codigo'] !== null ? autolinker.link(String(feature.properties['Codigo']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Espartillos_6_0() {
+            return {
+                pane: 'pane_Espartillos_6',
+                opacity: 1,
+                color: 'rgba(35,35,90,0.5)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(89,191,225,0.5)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Espartillos_6');
+        map.getPane('pane_Espartillos_6').style.zIndex = 406;
+        map.getPane('pane_Espartillos_6').style['mix-blend-mode'] = 'normal';
+        var layer_Espartillos_6 = L.layerGroup();
+        var espartillosCargados = false;
+        function cargarEspartillos(alTerminar) {
+            if(espartillosCargados) {
+                if(alTerminar) alTerminar();
+                return;
+            }
+            espartillosCargados = true;
+            var script = document.createElement('script');
+            script.src = 'data/Espartillos_6.js';
+            script.onload = function() {
+                layer_Espartillos_6.addLayer(new L.geoJson(json_Espartillos_6, {
+                    attribution: '', interactive: true, pane: 'pane_Espartillos_6',
+                    onEachFeature: pop_Espartillos_6, style: style_Espartillos_6_0
+                }));
+                if(alTerminar) alTerminar();
+            };
+            document.head.appendChild(script);
+        }
+        var overlaysTree = [
+            {label: '<img src="legend/Espartillos_6.png" /> Espartillos', layer: layer_Espartillos_6},
+            {label: '<img src="legend/Operativos_4.png" /> Operativos', layer: layer_Operativos_4},
+            {label: '<img src="legend/Rutas_SIF_3.png" /> Rutas_SIF', layer: layer_Rutas_SIF_3},
+            {label: '<img src="legend/zonasverdes__areas_zonas_verdes_2.png" /> zonasverdes__areas_zonas_verdes', layer: layer_zonasverdes__areas_zonas_verdes_2},
+            {label: '<img src="legend/Comunas_1.png" /> Comunas', layer: layer_Comunas_1},
+            {label: "Google Satellite", layer: layer_GoogleSatellite_0, radioGroup: 'bm' },]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        map.on('overlayadd', function(e) {
+            if(e.layer === layer_Comunas_1) cargarComunas();
+            if(e.layer === layer_Espartillos_6) cargarEspartillos();
+        });
+        setBounds();
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col2.classList.add('is-collapsed');
+        col2.insertAdjacentHTML('afterbegin', '<button type="button" class="filters-toggle" aria-expanded="false" title="Abrir filtros">☰</button><h1 class="panel-title">Filtros</h1><p class="panel-subtitle">Refina las áreas visibles en el mapa</p><button type="button" id="download-kml" class="kml-download" disabled>Descargar KML</button>');
+        var botonFiltros = col2.querySelector('.filters-toggle');
+        botonFiltros.onclick = function() {
+            cerrarBuscador();
+            var cerrado = col2.classList.toggle('is-collapsed');
+            botonFiltros.setAttribute('aria-expanded', String(!cerrado));
+            botonFiltros.title = cerrado ? 'Abrir filtros' : 'Cerrar filtros';
+            botonFiltros.textContent = cerrado ? '☰' : 'Ocultar filtros';
+            setTimeout(function(){ map.invalidateSize(); }, 180);
+        };
+        document.getElementById('download-kml').onclick = descargarKml;
+        map.on('click', function() {
+            cerrarBuscador();
+            cerrarFiltros();
+        });
+        row.addEventListener('click', function(event) {
+            if(col2.contains(event.target) || (panelBusqueda && panelBusqueda.parentElement.contains(event.target))) return;
+            cerrarBuscador();
+            cerrarFiltros();
+        });
+        col1.appendChild(mapDiv)
+        var Filters = {"No_Lote": "str","Zona": "str","NOMBRE": "str", "CUADRILLA": "str"};
+        var filteredFeatures = [];
+		function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var selector = document.getElementById("sel_" + keyS);
+                  var inputFiltro = document.getElementById("search_" + keyS);
+                  if(selector) {
+                    var options = selector.options;
+                    for (var i=0; i < options.length; i++) {
+                      if (options[i].selected) selection.push(options[i].value);
+                    }
+                  } else if(inputFiltro && inputFiltro.value.trim()) {
+                    selection = inputFiltro.value.split(',').map(function(v){ return v.trim(); });
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+		  filteredFeatures = features;
+          }
+		  // zoom automático al resultado filtrado
+setTimeout(function(){
+    try{
+        var bounds = layer_zonasverdes__areas_zonas_verdes_2.getBounds();
+        if(bounds.isValid()){
+            map.fitBounds(bounds);
+        }
+    }catch(e){}
+},200);
+
+updateDynamicFilters();
+          })
+		}
+        var lotesSeleccionados = [];
+        function actualizarBotonKml() {
+            var boton = document.getElementById('download-kml');
+            if(!boton) return;
+            boton.disabled = lotesSeleccionados.length === 0;
+            boton.textContent = lotesSeleccionados.length ? 'Descargar KML (' + lotesSeleccionados.length + ')' : 'Descargar KML';
+        }
+        function seleccionarLote(e){
+            var layer = e.target;
+            var microruta = String(layer.feature.properties.Microruta == null ? '' : layer.feature.properties.Microruta).trim();
+            var lotesMicroruta = json_zonasverdes__areas_zonas_verdes_2.features.filter(function(feature){
+                return String(feature.properties.Microruta == null ? '' : feature.properties.Microruta).trim() === microruta;
+            });
+            var yaSeleccionada = lotesMicroruta.length > 0 && lotesMicroruta.every(function(feature){
+                return lotesSeleccionados.indexOf(feature) !== -1;
+            });
+            lotesMicroruta.forEach(function(feature){
+                var indice = lotesSeleccionados.indexOf(feature);
+                if(yaSeleccionada && indice !== -1) lotesSeleccionados.splice(indice, 1);
+                if(!yaSeleccionada && indice === -1) lotesSeleccionados.push(feature);
+            });
+            layer_zonasverdes__areas_zonas_verdes_2.eachLayer(function(loteLayer){
+                var mismaMicroruta = String(loteLayer.feature.properties.Microruta == null ? '' : loteLayer.feature.properties.Microruta).trim() === microruta;
+                if(!mismaMicroruta) return;
+                loteLayer.setStyle(yaSeleccionada ? style_zonasverdes__areas_zonas_verdes_2_0(loteLayer.feature) : {color:'#111827', weight:3, fillColor:'#facc15', fillOpacity:0.82});
+            });
+            actualizarBotonKml();
+        }
+        function escaparXml(valor) {
+            return String(valor == null ? '' : valor).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+        }
+        function coordenadasKml(coordenadas) {
+            return coordenadas.map(function(coord){ return coord[0] + ',' + coord[1] + ',' + (coord.length > 2 ? coord[2] : 0); }).join(' ');
+        }
+        function geometriaKml(geometria) {
+            if(geometria.type === 'Polygon') return '<Polygon><outerBoundaryIs><LinearRing><coordinates>' + coordenadasKml(geometria.coordinates[0]) + '</coordinates></LinearRing></outerBoundaryIs>' + geometria.coordinates.slice(1).map(function(anillo){ return '<innerBoundaryIs><LinearRing><coordinates>' + coordenadasKml(anillo) + '</coordinates></LinearRing></innerBoundaryIs>'; }).join('') + '</Polygon>';
+            if(geometria.type === 'MultiPolygon') return '<MultiGeometry>' + geometria.coordinates.map(function(poligono){ return geometriaKml({type: 'Polygon', coordinates: poligono}); }).join('') + '</MultiGeometry>';
+            if(geometria.type === 'LineString') return '<LineString><coordinates>' + coordenadasKml(geometria.coordinates) + '</coordinates></LineString>';
+            if(geometria.type === 'Point') return '<Point><coordinates>' + coordenadasKml([geometria.coordinates]) + '</coordinates></Point>';
+            return '';
+        }
+        function descargarKml() {
+            if(!lotesSeleccionados.length) return;
+            var marcadores = lotesSeleccionados.map(function(feature){
+                var p = feature.properties || {};
+                var datos = Object.keys(p).map(function(clave){ return '<Data name="' + escaparXml(clave) + '"><value>' + escaparXml(p[clave]) + '</value></Data>'; }).join('');
+                return '<Placemark><name>Lote ' + escaparXml(p.No_Lote || '') + '</name><ExtendedData>' + datos + '</ExtendedData>' + geometriaKml(feature.geometry) + '</Placemark>';
+            }).join('');
+            var contenido = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Lotes seleccionados</name>' + marcadores + '</Document></kml>';
+            var enlace = document.createElement('a');
+            enlace.href = URL.createObjectURL(new Blob([contenido], {type: 'application/vnd.google-earth.kml+xml'}));
+            enlace.download = 'lotes-seleccionados.kml';
+            document.body.appendChild(enlace);
+            enlace.click();
+            document.body.removeChild(enlace);
+            URL.revokeObjectURL(enlace.href);
+        }
+
+        function seleccionarMicroruta(microruta, forzarSeleccion) {
+    var microrutaSeleccionada = String(microruta == null ? '' : microruta).trim();
+
+    var seleccionar = true;
+
+    layer_zonasverdes__areas_zonas_verdes_2.eachLayer(function(layer){
+
+        var microrutaMapa = String(layer.feature.properties.Microruta == null ? '' : layer.feature.properties.Microruta).trim();
+
+        if(microrutaMapa == microrutaSeleccionada){
+
+            if(layer.options.fillColor == '#ffff00'){
+                seleccionar = false;
+            }
+
+        }
+
+    });
+    if(forzarSeleccion) seleccionar = true;
+
+    layer_zonasverdes__areas_zonas_verdes_2.eachLayer(function(layer){
+
+        var microrutaMapa = String(layer.feature.properties.Microruta == null ? '' : layer.feature.properties.Microruta).trim();
+
+        if(microrutaMapa == microrutaSeleccionada){
+
+            if(seleccionar){
+
+                layer.setStyle({
+                    color:'#ff0000',
+                    weight:3,
+                    fillColor:'#ffff00',
+                    fillOpacity:0.7
+                });
+
+            }else{
+
+                layer.setStyle({
+                    color:'#008000',
+                    fillColor:'#008000',
+                    weight:1,
+                    fillOpacity:0.6
+                });
+
+            }
+
+        }
+
+    });
+
+}
+        function buscarValoresSeleccionados(){
+    var selector = document.getElementById('search-types');
+    var entrada = document.getElementById('search-values');
+    var tipos = Array.prototype.slice.call(selector.selectedOptions).map(function(option){ return option.value; });
+    if(tipos.indexOf('direccion') !== -1) { buscarDireccion(entrada.value); return; }
+    var valores = entrada.value.split(',').map(function(valor){ return valor.trim().toLowerCase(); }).filter(Boolean);
+    if(!tipos.length || !valores.length) {
+        alert('Seleccione al menos un campo e ingrese uno o varios valores.');
+        return;
+    }
+    if(tipos.indexOf('espartillos') !== -1 && !espartillosCargados) {
+        cargarEspartillos(buscarValoresSeleccionados);
+        return;
+    }
+    var configuraciones = {
+        lote: {campo: 'No_Lote', capa: layer_zonasverdes__areas_zonas_verdes_2},
+        microruta: {campo: 'Microruta', capa: layer_zonasverdes__areas_zonas_verdes_2},
+        espartillos: {campo: 'Codigo', capa: layer_Espartillos_6}
+    };
+    var capasEncontradas = [];
+    tipos.forEach(function(tipo){
+        var configuracion = configuraciones[tipo];
+        configuracion.capa.eachLayer(function(layer){
+            var propiedades = layer.feature && layer.feature.properties ? layer.feature.properties : {};
+            var valorMapa = String(propiedades[configuracion.campo] == null ? '' : propiedades[configuracion.campo]).trim().toLowerCase();
+            if(valores.indexOf(valorMapa) === -1 || capasEncontradas.indexOf(layer) !== -1) return;
+            layer.setStyle({color:'#d92d20', weight:3, fillColor:'#facc15', fillOpacity:0.75});
+            capasEncontradas.push(layer);
+            if(configuracion.capa === layer_zonasverdes__areas_zonas_verdes_2 && lotesSeleccionados.indexOf(layer.feature) === -1) {
+                lotesSeleccionados.push(layer.feature);
+            }
+        });
+    });
+    if(capasEncontradas.length) {
+        var grupo = new L.featureGroup(capasEncontradas);
+        map.fitBounds(grupo.getBounds(), {padding: [20, 20], maxZoom: 18});
+        actualizarBotonKml();
+    } else {
+        alert('No se encontraron resultados.');
+    }
+}
+		function updateDynamicFilters(){
+
+    var cuadrillas = new Set();
+
+    json_zonasverdes__areas_zonas_verdes_2.features.forEach(function(feature){
+            var p = feature.properties;
+
+            if(p.CUADRILLA){
+                cuadrillas.add(p.CUADRILLA);
+            }
+
+    });
+
+    updateSelect("sel_CUADRILLA", cuadrillas);
+}
+
+function updateSelect(id, values){
+
+    var select = document.getElementById(id);
+
+    var currentValue = select.value;
+
+    select.innerHTML = "";
+
+    // opción para quitar filtro
+    var option = document.createElement("option");
+    option.value = "";
+    option.text = "Todos";
+    select.appendChild(option);
+
+    values = Array.from(values).sort(function(a, b){
+        var numeroA = Number(a);
+        var numeroB = Number(b);
+        if(Number.isFinite(numeroA) && Number.isFinite(numeroB)) return numeroA - numeroB;
+        return String(a).localeCompare(String(b), 'es', {numeric: true, sensitivity: 'base'});
+    });
+
+    values.forEach(function(v){
+
+        var option = document.createElement("option");
+        option.value = v;
+        option.text = v;
+        select.appendChild(option);
+
+    });
+
+    // mantener selección si aún existe
+    if(values.includes(currentValue)){
+        select.value = currentValue;
+    }
+
+}
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_No_Lote = document.createElement('div');
+            div_No_Lote.id = "div_No_Lote";
+            div_No_Lote.className= "filterselect";
+            document.getElementById("menu").appendChild(div_No_Lote);
+            sel_No_Lote = document.createElement('select');
+            sel_No_Lote.multiple = true;
+            sel_No_Lote.size = 10;
+            sel_No_Lote.id = "sel_No_Lote";
+            var No_Lote_options_str = "<option value='' unselected></option>";
+            sel_No_Lote.onchange = function(){filterFunc()};
+            if(false) { // Lista sustituida por el campo de búsqueda directa al final.
+            No_Lote_options_str  += '<option value="NULL">NULL</option>';
+            No_Lote_options_str  += '<option value=""></option>';
+            No_Lote_options_str  += '<option value="1">1</option>';
+            No_Lote_options_str  += '<option value="10">10</option>';
+            No_Lote_options_str  += '<option value="100">100</option>';
+            No_Lote_options_str  += '<option value="1000">1000</option>';
+            No_Lote_options_str  += '<option value="1001">1001</option>';
+            No_Lote_options_str  += '<option value="1002">1002</option>';
+            No_Lote_options_str  += '<option value="1003">1003</option>';
+            No_Lote_options_str  += '<option value="1005">1005</option>';
+            No_Lote_options_str  += '<option value="1006">1006</option>';
+            No_Lote_options_str  += '<option value="1007">1007</option>';
+            No_Lote_options_str  += '<option value="1008">1008</option>';
+            No_Lote_options_str  += '<option value="1009">1009</option>';
+            No_Lote_options_str  += '<option value="1010">1010</option>';
+            No_Lote_options_str  += '<option value="1011">1011</option>';
+            No_Lote_options_str  += '<option value="1012">1012</option>';
+            No_Lote_options_str  += '<option value="1013">1013</option>';
+            No_Lote_options_str  += '<option value="1014">1014</option>';
+            No_Lote_options_str  += '<option value="1016">1016</option>';
+            No_Lote_options_str  += '<option value="1018">1018</option>';
+            No_Lote_options_str  += '<option value="1019">1019</option>';
+            No_Lote_options_str  += '<option value="102">102</option>';
+            No_Lote_options_str  += '<option value="1020">1020</option>';
+            No_Lote_options_str  += '<option value="1021">1021</option>';
+            No_Lote_options_str  += '<option value="1022">1022</option>';
+            No_Lote_options_str  += '<option value="1023">1023</option>';
+            No_Lote_options_str  += '<option value="1025">1025</option>';
+            No_Lote_options_str  += '<option value="1026">1026</option>';
+            No_Lote_options_str  += '<option value="1028">1028</option>';
+            No_Lote_options_str  += '<option value="1029">1029</option>';
+            No_Lote_options_str  += '<option value="103">103</option>';
+            No_Lote_options_str  += '<option value="1030">1030</option>';
+            No_Lote_options_str  += '<option value="1031">1031</option>';
+            No_Lote_options_str  += '<option value="1032">1032</option>';
+            No_Lote_options_str  += '<option value="1033">1033</option>';
+            No_Lote_options_str  += '<option value="1034">1034</option>';
+            No_Lote_options_str  += '<option value="1037">1037</option>';
+            No_Lote_options_str  += '<option value="1038">1038</option>';
+            No_Lote_options_str  += '<option value="1039">1039</option>';
+            No_Lote_options_str  += '<option value="104">104</option>';
+            No_Lote_options_str  += '<option value="1042">1042</option>';
+            No_Lote_options_str  += '<option value="1043">1043</option>';
+            No_Lote_options_str  += '<option value="1045">1045</option>';
+            No_Lote_options_str  += '<option value="1046">1046</option>';
+            No_Lote_options_str  += '<option value="1048">1048</option>';
+            No_Lote_options_str  += '<option value="1049">1049</option>';
+            No_Lote_options_str  += '<option value="1050">1050</option>';
+            No_Lote_options_str  += '<option value="1051">1051</option>';
+            No_Lote_options_str  += '<option value="1052">1052</option>';
+            No_Lote_options_str  += '<option value="1053">1053</option>';
+            No_Lote_options_str  += '<option value="1054">1054</option>';
+            No_Lote_options_str  += '<option value="1056">1056</option>';
+            No_Lote_options_str  += '<option value="1057">1057</option>';
+            No_Lote_options_str  += '<option value="1058">1058</option>';
+            No_Lote_options_str  += '<option value="1059">1059</option>';
+            No_Lote_options_str  += '<option value="106">106</option>';
+            No_Lote_options_str  += '<option value="1060">1060</option>';
+            No_Lote_options_str  += '<option value="1061">1061</option>';
+            No_Lote_options_str  += '<option value="1063">1063</option>';
+            No_Lote_options_str  += '<option value="1065">1065</option>';
+            No_Lote_options_str  += '<option value="1067">1067</option>';
+            No_Lote_options_str  += '<option value="1068">1068</option>';
+            No_Lote_options_str  += '<option value="1069">1069</option>';
+            No_Lote_options_str  += '<option value="107">107</option>';
+            No_Lote_options_str  += '<option value="1070">1070</option>';
+            No_Lote_options_str  += '<option value="1073">1073</option>';
+            No_Lote_options_str  += '<option value="1075">1075</option>';
+            No_Lote_options_str  += '<option value="1077">1077</option>';
+            No_Lote_options_str  += '<option value="1078">1078</option>';
+            No_Lote_options_str  += '<option value="108">108</option>';
+            No_Lote_options_str  += '<option value="1080">1080</option>';
+            No_Lote_options_str  += '<option value="1081">1081</option>';
+            No_Lote_options_str  += '<option value="1083">1083</option>';
+            No_Lote_options_str  += '<option value="1084">1084</option>';
+            No_Lote_options_str  += '<option value="1085">1085</option>';
+            No_Lote_options_str  += '<option value="1086">1086</option>';
+            No_Lote_options_str  += '<option value="1087">1087</option>';
+            No_Lote_options_str  += '<option value="1088">1088</option>';
+            No_Lote_options_str  += '<option value="109">109</option>';
+            No_Lote_options_str  += '<option value="1090">1090</option>';
+            No_Lote_options_str  += '<option value="1092">1092</option>';
+            No_Lote_options_str  += '<option value="1094">1094</option>';
+            No_Lote_options_str  += '<option value="1095">1095</option>';
+            No_Lote_options_str  += '<option value="1096">1096</option>';
+            No_Lote_options_str  += '<option value="1097">1097</option>';
+            No_Lote_options_str  += '<option value="1098">1098</option>';
+            No_Lote_options_str  += '<option value="1099">1099</option>';
+            No_Lote_options_str  += '<option value="11">11</option>';
+            No_Lote_options_str  += '<option value="110">110</option>';
+            No_Lote_options_str  += '<option value="1100">1100</option>';
+            No_Lote_options_str  += '<option value="1101">1101</option>';
+            No_Lote_options_str  += '<option value="1102">1102</option>';
+            No_Lote_options_str  += '<option value="1104">1104</option>';
+            No_Lote_options_str  += '<option value="1105">1105</option>';
+            No_Lote_options_str  += '<option value="1106">1106</option>';
+            No_Lote_options_str  += '<option value="1107">1107</option>';
+            No_Lote_options_str  += '<option value="1109">1109</option>';
+            No_Lote_options_str  += '<option value="111">111</option>';
+            No_Lote_options_str  += '<option value="1110">1110</option>';
+            No_Lote_options_str  += '<option value="1113">1113</option>';
+            No_Lote_options_str  += '<option value="1120">1120</option>';
+            No_Lote_options_str  += '<option value="1121">1121</option>';
+            No_Lote_options_str  += '<option value="1122">1122</option>';
+            No_Lote_options_str  += '<option value="1125">1125</option>';
+            No_Lote_options_str  += '<option value="1126">1126</option>';
+            No_Lote_options_str  += '<option value="113">113</option>';
+            No_Lote_options_str  += '<option value="1130">1130</option>';
+            No_Lote_options_str  += '<option value="1131">1131</option>';
+            No_Lote_options_str  += '<option value="1133">1133</option>';
+            No_Lote_options_str  += '<option value="1135">1135</option>';
+            No_Lote_options_str  += '<option value="1136">1136</option>';
+            No_Lote_options_str  += '<option value="1137">1137</option>';
+            No_Lote_options_str  += '<option value="1138">1138</option>';
+            No_Lote_options_str  += '<option value="1139">1139</option>';
+            No_Lote_options_str  += '<option value="114">114</option>';
+            No_Lote_options_str  += '<option value="1140">1140</option>';
+            No_Lote_options_str  += '<option value="1141">1141</option>';
+            No_Lote_options_str  += '<option value="1142">1142</option>';
+            No_Lote_options_str  += '<option value="1143">1143</option>';
+            No_Lote_options_str  += '<option value="1144">1144</option>';
+            No_Lote_options_str  += '<option value="1145">1145</option>';
+            No_Lote_options_str  += '<option value="1146">1146</option>';
+            No_Lote_options_str  += '<option value="1147">1147</option>';
+            No_Lote_options_str  += '<option value="1148">1148</option>';
+            No_Lote_options_str  += '<option value="1149">1149</option>';
+            No_Lote_options_str  += '<option value="115">115</option>';
+            No_Lote_options_str  += '<option value="1150">1150</option>';
+            No_Lote_options_str  += '<option value="1151">1151</option>';
+            No_Lote_options_str  += '<option value="1153">1153</option>';
+            No_Lote_options_str  += '<option value="1154">1154</option>';
+            No_Lote_options_str  += '<option value="1155">1155</option>';
+            No_Lote_options_str  += '<option value="1156">1156</option>';
+            No_Lote_options_str  += '<option value="1157">1157</option>';
+            No_Lote_options_str  += '<option value="1158">1158</option>';
+            No_Lote_options_str  += '<option value="116">116</option>';
+            No_Lote_options_str  += '<option value="1160">1160</option>';
+            No_Lote_options_str  += '<option value="1161">1161</option>';
+            No_Lote_options_str  += '<option value="1164">1164</option>';
+            No_Lote_options_str  += '<option value="1165">1165</option>';
+            No_Lote_options_str  += '<option value="1166">1166</option>';
+            No_Lote_options_str  += '<option value="1167">1167</option>';
+            No_Lote_options_str  += '<option value="1169">1169</option>';
+            No_Lote_options_str  += '<option value="117">117</option>';
+            No_Lote_options_str  += '<option value="1170">1170</option>';
+            No_Lote_options_str  += '<option value="1171">1171</option>';
+            No_Lote_options_str  += '<option value="1172">1172</option>';
+            No_Lote_options_str  += '<option value="1173">1173</option>';
+            No_Lote_options_str  += '<option value="1174">1174</option>';
+            No_Lote_options_str  += '<option value="1175">1175</option>';
+            No_Lote_options_str  += '<option value="118">118</option>';
+            No_Lote_options_str  += '<option value="119">119</option>';
+            No_Lote_options_str  += '<option value="12">12</option>';
+            No_Lote_options_str  += '<option value="120">120</option>';
+            No_Lote_options_str  += '<option value="121">121</option>';
+            No_Lote_options_str  += '<option value="122">122</option>';
+            No_Lote_options_str  += '<option value="123">123</option>';
+            No_Lote_options_str  += '<option value="124">124</option>';
+            No_Lote_options_str  += '<option value="125">125</option>';
+            No_Lote_options_str  += '<option value="127">127</option>';
+            No_Lote_options_str  += '<option value="128">128</option>';
+            No_Lote_options_str  += '<option value="129">129</option>';
+            No_Lote_options_str  += '<option value="13">13</option>';
+            No_Lote_options_str  += '<option value="130">130</option>';
+            No_Lote_options_str  += '<option value="131">131</option>';
+            No_Lote_options_str  += '<option value="132">132</option>';
+            No_Lote_options_str  += '<option value="133">133</option>';
+            No_Lote_options_str  += '<option value="134">134</option>';
+            No_Lote_options_str  += '<option value="135">135</option>';
+            No_Lote_options_str  += '<option value="136">136</option>';
+            No_Lote_options_str  += '<option value="137">137</option>';
+            No_Lote_options_str  += '<option value="138">138</option>';
+            No_Lote_options_str  += '<option value="139">139</option>';
+            No_Lote_options_str  += '<option value="14">14</option>';
+            No_Lote_options_str  += '<option value="140">140</option>';
+            No_Lote_options_str  += '<option value="141">141</option>';
+            No_Lote_options_str  += '<option value="142">142</option>';
+            No_Lote_options_str  += '<option value="143">143</option>';
+            No_Lote_options_str  += '<option value="144">144</option>';
+            No_Lote_options_str  += '<option value="145">145</option>';
+            No_Lote_options_str  += '<option value="147">147</option>';
+            No_Lote_options_str  += '<option value="148">148</option>';
+            No_Lote_options_str  += '<option value="149">149</option>';
+            No_Lote_options_str  += '<option value="15">15</option>';
+            No_Lote_options_str  += '<option value="150">150</option>';
+            No_Lote_options_str  += '<option value="151">151</option>';
+            No_Lote_options_str  += '<option value="152">152</option>';
+            No_Lote_options_str  += '<option value="153">153</option>';
+            No_Lote_options_str  += '<option value="154">154</option>';
+            No_Lote_options_str  += '<option value="155">155</option>';
+            No_Lote_options_str  += '<option value="157">157</option>';
+            No_Lote_options_str  += '<option value="158">158</option>';
+            No_Lote_options_str  += '<option value="159">159</option>';
+            No_Lote_options_str  += '<option value="16">16</option>';
+            No_Lote_options_str  += '<option value="160">160</option>';
+            No_Lote_options_str  += '<option value="161">161</option>';
+            No_Lote_options_str  += '<option value="162">162</option>';
+            No_Lote_options_str  += '<option value="163">163</option>';
+            No_Lote_options_str  += '<option value="164">164</option>';
+            No_Lote_options_str  += '<option value="165">165</option>';
+            No_Lote_options_str  += '<option value="166">166</option>';
+            No_Lote_options_str  += '<option value="167">167</option>';
+            No_Lote_options_str  += '<option value="168">168</option>';
+            No_Lote_options_str  += '<option value="169">169</option>';
+            No_Lote_options_str  += '<option value="1694">1694</option>';
+            No_Lote_options_str  += '<option value="17">17</option>';
+            No_Lote_options_str  += '<option value="170">170</option>';
+            No_Lote_options_str  += '<option value="171">171</option>';
+            No_Lote_options_str  += '<option value="172">172</option>';
+            No_Lote_options_str  += '<option value="173">173</option>';
+            No_Lote_options_str  += '<option value="174">174</option>';
+            No_Lote_options_str  += '<option value="175">175</option>';
+            No_Lote_options_str  += '<option value="176">176</option>';
+            No_Lote_options_str  += '<option value="177">177</option>';
+            No_Lote_options_str  += '<option value="178">178</option>';
+            No_Lote_options_str  += '<option value="179">179</option>';
+            No_Lote_options_str  += '<option value="18">18</option>';
+            No_Lote_options_str  += '<option value="180">180</option>';
+            No_Lote_options_str  += '<option value="183">183</option>';
+            No_Lote_options_str  += '<option value="184">184</option>';
+            No_Lote_options_str  += '<option value="185">185</option>';
+            No_Lote_options_str  += '<option value="187">187</option>';
+            No_Lote_options_str  += '<option value="188">188</option>';
+            No_Lote_options_str  += '<option value="189">189</option>';
+            No_Lote_options_str  += '<option value="19">19</option>';
+            No_Lote_options_str  += '<option value="190">190</option>';
+            No_Lote_options_str  += '<option value="191">191</option>';
+            No_Lote_options_str  += '<option value="192">192</option>';
+            No_Lote_options_str  += '<option value="193">193</option>';
+            No_Lote_options_str  += '<option value="194">194</option>';
+            No_Lote_options_str  += '<option value="195">195</option>';
+            No_Lote_options_str  += '<option value="196">196</option>';
+            No_Lote_options_str  += '<option value="197">197</option>';
+            No_Lote_options_str  += '<option value="1973">1973</option>';
+            No_Lote_options_str  += '<option value="198">198</option>';
+            No_Lote_options_str  += '<option value="2">2</option>';
+            No_Lote_options_str  += '<option value="20">20</option>';
+            No_Lote_options_str  += '<option value="201">201</option>';
+            No_Lote_options_str  += '<option value="202">202</option>';
+            No_Lote_options_str  += '<option value="203">203</option>';
+            No_Lote_options_str  += '<option value="204">204</option>';
+            No_Lote_options_str  += '<option value="206">206</option>';
+            No_Lote_options_str  += '<option value="207">207</option>';
+            No_Lote_options_str  += '<option value="208">208</option>';
+            No_Lote_options_str  += '<option value="209">209</option>';
+            No_Lote_options_str  += '<option value="21">21</option>';
+            No_Lote_options_str  += '<option value="211">211</option>';
+            No_Lote_options_str  += '<option value="212">212</option>';
+            No_Lote_options_str  += '<option value="213">213</option>';
+            No_Lote_options_str  += '<option value="214">214</option>';
+            No_Lote_options_str  += '<option value="215">215</option>';
+            No_Lote_options_str  += '<option value="216">216</option>';
+            No_Lote_options_str  += '<option value="217">217</option>';
+            No_Lote_options_str  += '<option value="218">218</option>';
+            No_Lote_options_str  += '<option value="219">219</option>';
+            No_Lote_options_str  += '<option value="22">22</option>';
+            No_Lote_options_str  += '<option value="223">223</option>';
+            No_Lote_options_str  += '<option value="225">225</option>';
+            No_Lote_options_str  += '<option value="226">226</option>';
+            No_Lote_options_str  += '<option value="227">227</option>';
+            No_Lote_options_str  += '<option value="228">228</option>';
+            No_Lote_options_str  += '<option value="229">229</option>';
+            No_Lote_options_str  += '<option value="23">23</option>';
+            No_Lote_options_str  += '<option value="230">230</option>';
+            No_Lote_options_str  += '<option value="231">231</option>';
+            No_Lote_options_str  += '<option value="232">232</option>';
+            No_Lote_options_str  += '<option value="233">233</option>';
+            No_Lote_options_str  += '<option value="234">234</option>';
+            No_Lote_options_str  += '<option value="235">235</option>';
+            No_Lote_options_str  += '<option value="236">236</option>';
+            No_Lote_options_str  += '<option value="238">238</option>';
+            No_Lote_options_str  += '<option value="239">239</option>';
+            No_Lote_options_str  += '<option value="24">24</option>';
+            No_Lote_options_str  += '<option value="240">240</option>';
+            No_Lote_options_str  += '<option value="241">241</option>';
+            No_Lote_options_str  += '<option value="242">242</option>';
+            No_Lote_options_str  += '<option value="243">243</option>';
+            No_Lote_options_str  += '<option value="244">244</option>';
+            No_Lote_options_str  += '<option value="245">245</option>';
+            No_Lote_options_str  += '<option value="246">246</option>';
+            No_Lote_options_str  += '<option value="247">247</option>';
+            No_Lote_options_str  += '<option value="248">248</option>';
+            No_Lote_options_str  += '<option value="249">249</option>';
+            No_Lote_options_str  += '<option value="25">25</option>';
+            No_Lote_options_str  += '<option value="250">250</option>';
+            No_Lote_options_str  += '<option value="251">251</option>';
+            No_Lote_options_str  += '<option value="252">252</option>';
+            No_Lote_options_str  += '<option value="253">253</option>';
+            No_Lote_options_str  += '<option value="256">256</option>';
+            No_Lote_options_str  += '<option value="257">257</option>';
+            No_Lote_options_str  += '<option value="258">258</option>';
+            No_Lote_options_str  += '<option value="259">259</option>';
+            No_Lote_options_str  += '<option value="26">26</option>';
+            No_Lote_options_str  += '<option value="260">260</option>';
+            No_Lote_options_str  += '<option value="261">261</option>';
+            No_Lote_options_str  += '<option value="262">262</option>';
+            No_Lote_options_str  += '<option value="263">263</option>';
+            No_Lote_options_str  += '<option value="264">264</option>';
+            No_Lote_options_str  += '<option value="265">265</option>';
+            No_Lote_options_str  += '<option value="266">266</option>';
+            No_Lote_options_str  += '<option value="267">267</option>';
+            No_Lote_options_str  += '<option value="268">268</option>';
+            No_Lote_options_str  += '<option value="269">269</option>';
+            No_Lote_options_str  += '<option value="27">27</option>';
+            No_Lote_options_str  += '<option value="270">270</option>';
+            No_Lote_options_str  += '<option value="271">271</option>';
+            No_Lote_options_str  += '<option value="272">272</option>';
+            No_Lote_options_str  += '<option value="273">273</option>';
+            No_Lote_options_str  += '<option value="274">274</option>';
+            No_Lote_options_str  += '<option value="275">275</option>';
+            No_Lote_options_str  += '<option value="276">276</option>';
+            No_Lote_options_str  += '<option value="277">277</option>';
+            No_Lote_options_str  += '<option value="278">278</option>';
+            No_Lote_options_str  += '<option value="279">279</option>';
+            No_Lote_options_str  += '<option value="28">28</option>';
+            No_Lote_options_str  += '<option value="280">280</option>';
+            No_Lote_options_str  += '<option value="281">281</option>';
+            No_Lote_options_str  += '<option value="282">282</option>';
+            No_Lote_options_str  += '<option value="283">283</option>';
+            No_Lote_options_str  += '<option value="29">29</option>';
+            No_Lote_options_str  += '<option value="291">291</option>';
+            No_Lote_options_str  += '<option value="292">292</option>';
+            No_Lote_options_str  += '<option value="293">293</option>';
+            No_Lote_options_str  += '<option value="295">295</option>';
+            No_Lote_options_str  += '<option value="296">296</option>';
+            No_Lote_options_str  += '<option value="297">297</option>';
+            No_Lote_options_str  += '<option value="298">298</option>';
+            No_Lote_options_str  += '<option value="299">299</option>';
+            No_Lote_options_str  += '<option value="3">3</option>';
+            No_Lote_options_str  += '<option value="30">30</option>';
+            No_Lote_options_str  += '<option value="300">300</option>';
+            No_Lote_options_str  += '<option value="301">301</option>';
+            No_Lote_options_str  += '<option value="302">302</option>';
+            No_Lote_options_str  += '<option value="303">303</option>';
+            No_Lote_options_str  += '<option value="304">304</option>';
+            No_Lote_options_str  += '<option value="305">305</option>';
+            No_Lote_options_str  += '<option value="306">306</option>';
+            No_Lote_options_str  += '<option value="31">31</option>';
+            No_Lote_options_str  += '<option value="310">310</option>';
+            No_Lote_options_str  += '<option value="313">313</option>';
+            No_Lote_options_str  += '<option value="315">315</option>';
+            No_Lote_options_str  += '<option value="32">32</option>';
+            No_Lote_options_str  += '<option value="323">323</option>';
+            No_Lote_options_str  += '<option value="329">329</option>';
+            No_Lote_options_str  += '<option value="351">351</option>';
+            No_Lote_options_str  += '<option value="352">352</option>';
+            No_Lote_options_str  += '<option value="354">354</option>';
+            No_Lote_options_str  += '<option value="356">356</option>';
+            No_Lote_options_str  += '<option value="358">358</option>';
+            No_Lote_options_str  += '<option value="359">359</option>';
+            No_Lote_options_str  += '<option value="36">36</option>';
+            No_Lote_options_str  += '<option value="360">360</option>';
+            No_Lote_options_str  += '<option value="362">362</option>';
+            No_Lote_options_str  += '<option value="364">364</option>';
+            No_Lote_options_str  += '<option value="365">365</option>';
+            No_Lote_options_str  += '<option value="367">367</option>';
+            No_Lote_options_str  += '<option value="37">37</option>';
+            No_Lote_options_str  += '<option value="371">371</option>';
+            No_Lote_options_str  += '<option value="372">372</option>';
+            No_Lote_options_str  += '<option value="376">376</option>';
+            No_Lote_options_str  += '<option value="377">377</option>';
+            No_Lote_options_str  += '<option value="380">380</option>';
+            No_Lote_options_str  += '<option value="39">39</option>';
+            No_Lote_options_str  += '<option value="391">391</option>';
+            No_Lote_options_str  += '<option value="392">392</option>';
+            No_Lote_options_str  += '<option value="396">396</option>';
+            No_Lote_options_str  += '<option value="399">399</option>';
+            No_Lote_options_str  += '<option value="40">40</option>';
+            No_Lote_options_str  += '<option value="400">400</option>';
+            No_Lote_options_str  += '<option value="401">401</option>';
+            No_Lote_options_str  += '<option value="402">402</option>';
+            No_Lote_options_str  += '<option value="403">403</option>';
+            No_Lote_options_str  += '<option value="404">404</option>';
+            No_Lote_options_str  += '<option value="405">405</option>';
+            No_Lote_options_str  += '<option value="406">406</option>';
+            No_Lote_options_str  += '<option value="408">408</option>';
+            No_Lote_options_str  += '<option value="409">409</option>';
+            No_Lote_options_str  += '<option value="41">41</option>';
+            No_Lote_options_str  += '<option value="410">410</option>';
+            No_Lote_options_str  += '<option value="411">411</option>';
+            No_Lote_options_str  += '<option value="412">412</option>';
+            No_Lote_options_str  += '<option value="414">414</option>';
+            No_Lote_options_str  += '<option value="415">415</option>';
+            No_Lote_options_str  += '<option value="416">416</option>';
+            No_Lote_options_str  += '<option value="417">417</option>';
+            No_Lote_options_str  += '<option value="42">42</option>';
+            No_Lote_options_str  += '<option value="422">422</option>';
+            No_Lote_options_str  += '<option value="423">423</option>';
+            No_Lote_options_str  += '<option value="424">424</option>';
+            No_Lote_options_str  += '<option value="427">427</option>';
+            No_Lote_options_str  += '<option value="429">429</option>';
+            No_Lote_options_str  += '<option value="43">43</option>';
+            No_Lote_options_str  += '<option value="430">430</option>';
+            No_Lote_options_str  += '<option value="431">431</option>';
+            No_Lote_options_str  += '<option value="432">432</option>';
+            No_Lote_options_str  += '<option value="433">433</option>';
+            No_Lote_options_str  += '<option value="436">436</option>';
+            No_Lote_options_str  += '<option value="437">437</option>';
+            No_Lote_options_str  += '<option value="439">439</option>';
+            No_Lote_options_str  += '<option value="44">44</option>';
+            No_Lote_options_str  += '<option value="440">440</option>';
+            No_Lote_options_str  += '<option value="442">442</option>';
+            No_Lote_options_str  += '<option value="443">443</option>';
+            No_Lote_options_str  += '<option value="444">444</option>';
+            No_Lote_options_str  += '<option value="448">448</option>';
+            No_Lote_options_str  += '<option value="45">45</option>';
+            No_Lote_options_str  += '<option value="451">451</option>';
+            No_Lote_options_str  += '<option value="453">453</option>';
+            No_Lote_options_str  += '<option value="456">456</option>';
+            No_Lote_options_str  += '<option value="46">46</option>';
+            No_Lote_options_str  += '<option value="462">462</option>';
+            No_Lote_options_str  += '<option value="463">463</option>';
+            No_Lote_options_str  += '<option value="467">467</option>';
+            No_Lote_options_str  += '<option value="469">469</option>';
+            No_Lote_options_str  += '<option value="47">47</option>';
+            No_Lote_options_str  += '<option value="472">472</option>';
+            No_Lote_options_str  += '<option value="48">48</option>';
+            No_Lote_options_str  += '<option value="484">484</option>';
+            No_Lote_options_str  += '<option value="489">489</option>';
+            No_Lote_options_str  += '<option value="49">49</option>';
+            No_Lote_options_str  += '<option value="490">490</option>';
+            No_Lote_options_str  += '<option value="496">496</option>';
+            No_Lote_options_str  += '<option value="497">497</option>';
+            No_Lote_options_str  += '<option value="498">498</option>';
+            No_Lote_options_str  += '<option value="50">50</option>';
+            No_Lote_options_str  += '<option value="502">502</option>';
+            No_Lote_options_str  += '<option value="51">51</option>';
+            No_Lote_options_str  += '<option value="510">510</option>';
+            No_Lote_options_str  += '<option value="519">519</option>';
+            No_Lote_options_str  += '<option value="52">52</option>';
+            No_Lote_options_str  += '<option value="520">520</option>';
+            No_Lote_options_str  += '<option value="522">522</option>';
+            No_Lote_options_str  += '<option value="523">523</option>';
+            No_Lote_options_str  += '<option value="524">524</option>';
+            No_Lote_options_str  += '<option value="53">53</option>';
+            No_Lote_options_str  += '<option value="530">530</option>';
+            No_Lote_options_str  += '<option value="531">531</option>';
+            No_Lote_options_str  += '<option value="532">532</option>';
+            No_Lote_options_str  += '<option value="533">533</option>';
+            No_Lote_options_str  += '<option value="534">534</option>';
+            No_Lote_options_str  += '<option value="535">535</option>';
+            No_Lote_options_str  += '<option value="537">537</option>';
+            No_Lote_options_str  += '<option value="538">538</option>';
+            No_Lote_options_str  += '<option value="539">539</option>';
+            No_Lote_options_str  += '<option value="54">54</option>';
+            No_Lote_options_str  += '<option value="540">540</option>';
+            No_Lote_options_str  += '<option value="541">541</option>';
+            No_Lote_options_str  += '<option value="542">542</option>';
+            No_Lote_options_str  += '<option value="543">543</option>';
+            No_Lote_options_str  += '<option value="544">544</option>';
+            No_Lote_options_str  += '<option value="545">545</option>';
+            No_Lote_options_str  += '<option value="546">546</option>';
+            No_Lote_options_str  += '<option value="547">547</option>';
+            No_Lote_options_str  += '<option value="548">548</option>';
+            No_Lote_options_str  += '<option value="549">549</option>';
+            No_Lote_options_str  += '<option value="55">55</option>';
+            No_Lote_options_str  += '<option value="554">554</option>';
+            No_Lote_options_str  += '<option value="557">557</option>';
+            No_Lote_options_str  += '<option value="558">558</option>';
+            No_Lote_options_str  += '<option value="559">559</option>';
+            No_Lote_options_str  += '<option value="56">56</option>';
+            No_Lote_options_str  += '<option value="567">567</option>';
+            No_Lote_options_str  += '<option value="568">568</option>';
+            No_Lote_options_str  += '<option value="569">569</option>';
+            No_Lote_options_str  += '<option value="57">57</option>';
+            No_Lote_options_str  += '<option value="570">570</option>';
+            No_Lote_options_str  += '<option value="572">572</option>';
+            No_Lote_options_str  += '<option value="573">573</option>';
+            No_Lote_options_str  += '<option value="575">575</option>';
+            No_Lote_options_str  += '<option value="576">576</option>';
+            No_Lote_options_str  += '<option value="578">578</option>';
+            No_Lote_options_str  += '<option value="579">579</option>';
+            No_Lote_options_str  += '<option value="58">58</option>';
+            No_Lote_options_str  += '<option value="580">580</option>';
+            No_Lote_options_str  += '<option value="581">581</option>';
+            No_Lote_options_str  += '<option value="582">582</option>';
+            No_Lote_options_str  += '<option value="583">583</option>';
+            No_Lote_options_str  += '<option value="584">584</option>';
+            No_Lote_options_str  += '<option value="585">585</option>';
+            No_Lote_options_str  += '<option value="586">586</option>';
+            No_Lote_options_str  += '<option value="587">587</option>';
+            No_Lote_options_str  += '<option value="588">588</option>';
+            No_Lote_options_str  += '<option value="589">589</option>';
+            No_Lote_options_str  += '<option value="59">59</option>';
+            No_Lote_options_str  += '<option value="590">590</option>';
+            No_Lote_options_str  += '<option value="592">592</option>';
+            No_Lote_options_str  += '<option value="593">593</option>';
+            No_Lote_options_str  += '<option value="594">594</option>';
+            No_Lote_options_str  += '<option value="595">595</option>';
+            No_Lote_options_str  += '<option value="596">596</option>';
+            No_Lote_options_str  += '<option value="597">597</option>';
+            No_Lote_options_str  += '<option value="598">598</option>';
+            No_Lote_options_str  += '<option value="60">60</option>';
+            No_Lote_options_str  += '<option value="601">601</option>';
+            No_Lote_options_str  += '<option value="603">603</option>';
+            No_Lote_options_str  += '<option value="604">604</option>';
+            No_Lote_options_str  += '<option value="605">605</option>';
+            No_Lote_options_str  += '<option value="606">606</option>';
+            No_Lote_options_str  += '<option value="607">607</option>';
+            No_Lote_options_str  += '<option value="608">608</option>';
+            No_Lote_options_str  += '<option value="609">609</option>';
+            No_Lote_options_str  += '<option value="61">61</option>';
+            No_Lote_options_str  += '<option value="610">610</option>';
+            No_Lote_options_str  += '<option value="611">611</option>';
+            No_Lote_options_str  += '<option value="612">612</option>';
+            No_Lote_options_str  += '<option value="613">613</option>';
+            No_Lote_options_str  += '<option value="614">614</option>';
+            No_Lote_options_str  += '<option value="615">615</option>';
+            No_Lote_options_str  += '<option value="616">616</option>';
+            No_Lote_options_str  += '<option value="617">617</option>';
+            No_Lote_options_str  += '<option value="618">618</option>';
+            No_Lote_options_str  += '<option value="619">619</option>';
+            No_Lote_options_str  += '<option value="622">622</option>';
+            No_Lote_options_str  += '<option value="623">623</option>';
+            No_Lote_options_str  += '<option value="624">624</option>';
+            No_Lote_options_str  += '<option value="625">625</option>';
+            No_Lote_options_str  += '<option value="626">626</option>';
+            No_Lote_options_str  += '<option value="627">627</option>';
+            No_Lote_options_str  += '<option value="628">628</option>';
+            No_Lote_options_str  += '<option value="629">629</option>';
+            No_Lote_options_str  += '<option value="63">63</option>';
+            No_Lote_options_str  += '<option value="630">630</option>';
+            No_Lote_options_str  += '<option value="631">631</option>';
+            No_Lote_options_str  += '<option value="632">632</option>';
+            No_Lote_options_str  += '<option value="633">633</option>';
+            No_Lote_options_str  += '<option value="634">634</option>';
+            No_Lote_options_str  += '<option value="635">635</option>';
+            No_Lote_options_str  += '<option value="636">636</option>';
+            No_Lote_options_str  += '<option value="637">637</option>';
+            No_Lote_options_str  += '<option value="638">638</option>';
+            No_Lote_options_str  += '<option value="64">64</option>';
+            No_Lote_options_str  += '<option value="640">640</option>';
+            No_Lote_options_str  += '<option value="642">642</option>';
+            No_Lote_options_str  += '<option value="643">643</option>';
+            No_Lote_options_str  += '<option value="644">644</option>';
+            No_Lote_options_str  += '<option value="645">645</option>';
+            No_Lote_options_str  += '<option value="646">646</option>';
+            No_Lote_options_str  += '<option value="647">647</option>';
+            No_Lote_options_str  += '<option value="648">648</option>';
+            No_Lote_options_str  += '<option value="65">65</option>';
+            No_Lote_options_str  += '<option value="651">651</option>';
+            No_Lote_options_str  += '<option value="652">652</option>';
+            No_Lote_options_str  += '<option value="653">653</option>';
+            No_Lote_options_str  += '<option value="654">654</option>';
+            No_Lote_options_str  += '<option value="655">655</option>';
+            No_Lote_options_str  += '<option value="656">656</option>';
+            No_Lote_options_str  += '<option value="657">657</option>';
+            No_Lote_options_str  += '<option value="658">658</option>';
+            No_Lote_options_str  += '<option value="66">66</option>';
+            No_Lote_options_str  += '<option value="660">660</option>';
+            No_Lote_options_str  += '<option value="663">663</option>';
+            No_Lote_options_str  += '<option value="665">665</option>';
+            No_Lote_options_str  += '<option value="666">666</option>';
+            No_Lote_options_str  += '<option value="667">667</option>';
+            No_Lote_options_str  += '<option value="67">67</option>';
+            No_Lote_options_str  += '<option value="670">670</option>';
+            No_Lote_options_str  += '<option value="671">671</option>';
+            No_Lote_options_str  += '<option value="672">672</option>';
+            No_Lote_options_str  += '<option value="674">674</option>';
+            No_Lote_options_str  += '<option value="675">675</option>';
+            No_Lote_options_str  += '<option value="676">676</option>';
+            No_Lote_options_str  += '<option value="679">679</option>';
+            No_Lote_options_str  += '<option value="68">68</option>';
+            No_Lote_options_str  += '<option value="680">680</option>';
+            No_Lote_options_str  += '<option value="681">681</option>';
+            No_Lote_options_str  += '<option value="682">682</option>';
+            No_Lote_options_str  += '<option value="683">683</option>';
+            No_Lote_options_str  += '<option value="699">699</option>';
+            No_Lote_options_str  += '<option value="7">7</option>';
+            No_Lote_options_str  += '<option value="70">70</option>';
+            No_Lote_options_str  += '<option value="700">700</option>';
+            No_Lote_options_str  += '<option value="701">701</option>';
+            No_Lote_options_str  += '<option value="702">702</option>';
+            No_Lote_options_str  += '<option value="703">703</option>';
+            No_Lote_options_str  += '<option value="704">704</option>';
+            No_Lote_options_str  += '<option value="705">705</option>';
+            No_Lote_options_str  += '<option value="706">706</option>';
+            No_Lote_options_str  += '<option value="708">708</option>';
+            No_Lote_options_str  += '<option value="709">709</option>';
+            No_Lote_options_str  += '<option value="71">71</option>';
+            No_Lote_options_str  += '<option value="711">711</option>';
+            No_Lote_options_str  += '<option value="712">712</option>';
+            No_Lote_options_str  += '<option value="713">713</option>';
+            No_Lote_options_str  += '<option value="714">714</option>';
+            No_Lote_options_str  += '<option value="716">716</option>';
+            No_Lote_options_str  += '<option value="717">717</option>';
+            No_Lote_options_str  += '<option value="718">718</option>';
+            No_Lote_options_str  += '<option value="72">72</option>';
+            No_Lote_options_str  += '<option value="720">720</option>';
+            No_Lote_options_str  += '<option value="721">721</option>';
+            No_Lote_options_str  += '<option value="722">722</option>';
+            No_Lote_options_str  += '<option value="724">724</option>';
+            No_Lote_options_str  += '<option value="725">725</option>';
+            No_Lote_options_str  += '<option value="726">726</option>';
+            No_Lote_options_str  += '<option value="727">727</option>';
+            No_Lote_options_str  += '<option value="728">728</option>';
+            No_Lote_options_str  += '<option value="73">73</option>';
+            No_Lote_options_str  += '<option value="732">732</option>';
+            No_Lote_options_str  += '<option value="733">733</option>';
+            No_Lote_options_str  += '<option value="734">734</option>';
+            No_Lote_options_str  += '<option value="735">735</option>';
+            No_Lote_options_str  += '<option value="736">736</option>';
+            No_Lote_options_str  += '<option value="737">737</option>';
+            No_Lote_options_str  += '<option value="738">738</option>';
+            No_Lote_options_str  += '<option value="739">739</option>';
+            No_Lote_options_str  += '<option value="741">741</option>';
+            No_Lote_options_str  += '<option value="742">742</option>';
+            No_Lote_options_str  += '<option value="743">743</option>';
+            No_Lote_options_str  += '<option value="744">744</option>';
+            No_Lote_options_str  += '<option value="745">745</option>';
+            No_Lote_options_str  += '<option value="746">746</option>';
+            No_Lote_options_str  += '<option value="747">747</option>';
+            No_Lote_options_str  += '<option value="748">748</option>';
+            No_Lote_options_str  += '<option value="749">749</option>';
+            No_Lote_options_str  += '<option value="750">750</option>';
+            No_Lote_options_str  += '<option value="751">751</option>';
+            No_Lote_options_str  += '<option value="752">752</option>';
+            No_Lote_options_str  += '<option value="753">753</option>';
+            No_Lote_options_str  += '<option value="754">754</option>';
+            No_Lote_options_str  += '<option value="755">755</option>';
+            No_Lote_options_str  += '<option value="756">756</option>';
+            No_Lote_options_str  += '<option value="757">757</option>';
+            No_Lote_options_str  += '<option value="758">758</option>';
+            No_Lote_options_str  += '<option value="759">759</option>';
+            No_Lote_options_str  += '<option value="760">760</option>';
+            No_Lote_options_str  += '<option value="761">761</option>';
+            No_Lote_options_str  += '<option value="762">762</option>';
+            No_Lote_options_str  += '<option value="763">763</option>';
+            No_Lote_options_str  += '<option value="764">764</option>';
+            No_Lote_options_str  += '<option value="765">765</option>';
+            No_Lote_options_str  += '<option value="766">766</option>';
+            No_Lote_options_str  += '<option value="767">767</option>';
+            No_Lote_options_str  += '<option value="768">768</option>';
+            No_Lote_options_str  += '<option value="769">769</option>';
+            No_Lote_options_str  += '<option value="77">77</option>';
+            No_Lote_options_str  += '<option value="770">770</option>';
+            No_Lote_options_str  += '<option value="771">771</option>';
+            No_Lote_options_str  += '<option value="772">772</option>';
+            No_Lote_options_str  += '<option value="773">773</option>';
+            No_Lote_options_str  += '<option value="774">774</option>';
+            No_Lote_options_str  += '<option value="775">775</option>';
+            No_Lote_options_str  += '<option value="776">776</option>';
+            No_Lote_options_str  += '<option value="777">777</option>';
+            No_Lote_options_str  += '<option value="778">778</option>';
+            No_Lote_options_str  += '<option value="779">779</option>';
+            No_Lote_options_str  += '<option value="78">78</option>';
+            No_Lote_options_str  += '<option value="780">780</option>';
+            No_Lote_options_str  += '<option value="781">781</option>';
+            No_Lote_options_str  += '<option value="782">782</option>';
+            No_Lote_options_str  += '<option value="783">783</option>';
+            No_Lote_options_str  += '<option value="784">784</option>';
+            No_Lote_options_str  += '<option value="785">785</option>';
+            No_Lote_options_str  += '<option value="786">786</option>';
+            No_Lote_options_str  += '<option value="787">787</option>';
+            No_Lote_options_str  += '<option value="788">788</option>';
+            No_Lote_options_str  += '<option value="789">789</option>';
+            No_Lote_options_str  += '<option value="79">79</option>';
+            No_Lote_options_str  += '<option value="790">790</option>';
+            No_Lote_options_str  += '<option value="791">791</option>';
+            No_Lote_options_str  += '<option value="792">792</option>';
+            No_Lote_options_str  += '<option value="793">793</option>';
+            No_Lote_options_str  += '<option value="794">794</option>';
+            No_Lote_options_str  += '<option value="795">795</option>';
+            No_Lote_options_str  += '<option value="796">796</option>';
+            No_Lote_options_str  += '<option value="797">797</option>';
+            No_Lote_options_str  += '<option value="798">798</option>';
+            No_Lote_options_str  += '<option value="799">799</option>';
+            No_Lote_options_str  += '<option value="8">8</option>';
+            No_Lote_options_str  += '<option value="80">80</option>';
+            No_Lote_options_str  += '<option value="800">800</option>';
+            No_Lote_options_str  += '<option value="801">801</option>';
+            No_Lote_options_str  += '<option value="802">802</option>';
+            No_Lote_options_str  += '<option value="803">803</option>';
+            No_Lote_options_str  += '<option value="804">804</option>';
+            No_Lote_options_str  += '<option value="805">805</option>';
+            No_Lote_options_str  += '<option value="806">806</option>';
+            No_Lote_options_str  += '<option value="807">807</option>';
+            No_Lote_options_str  += '<option value="808">808</option>';
+            No_Lote_options_str  += '<option value="809">809</option>';
+            No_Lote_options_str  += '<option value="810">810</option>';
+            No_Lote_options_str  += '<option value="812">812</option>';
+            No_Lote_options_str  += '<option value="813">813</option>';
+            No_Lote_options_str  += '<option value="814">814</option>';
+            No_Lote_options_str  += '<option value="815">815</option>';
+            No_Lote_options_str  += '<option value="816">816</option>';
+            No_Lote_options_str  += '<option value="818">818</option>';
+            No_Lote_options_str  += '<option value="819">819</option>';
+            No_Lote_options_str  += '<option value="820">820</option>';
+            No_Lote_options_str  += '<option value="821">821</option>';
+            No_Lote_options_str  += '<option value="822">822</option>';
+            No_Lote_options_str  += '<option value="824">824</option>';
+            No_Lote_options_str  += '<option value="825">825</option>';
+            No_Lote_options_str  += '<option value="826">826</option>';
+            No_Lote_options_str  += '<option value="827">827</option>';
+            No_Lote_options_str  += '<option value="828">828</option>';
+            No_Lote_options_str  += '<option value="829">829</option>';
+            No_Lote_options_str  += '<option value="830">830</option>';
+            No_Lote_options_str  += '<option value="831">831</option>';
+            No_Lote_options_str  += '<option value="832">832</option>';
+            No_Lote_options_str  += '<option value="833">833</option>';
+            No_Lote_options_str  += '<option value="834">834</option>';
+            No_Lote_options_str  += '<option value="835">835</option>';
+            No_Lote_options_str  += '<option value="836">836</option>';
+            No_Lote_options_str  += '<option value="837">837</option>';
+            No_Lote_options_str  += '<option value="838">838</option>';
+            No_Lote_options_str  += '<option value="839">839</option>';
+            No_Lote_options_str  += '<option value="84">84</option>';
+            No_Lote_options_str  += '<option value="840">840</option>';
+            No_Lote_options_str  += '<option value="841">841</option>';
+            No_Lote_options_str  += '<option value="842">842</option>';
+            No_Lote_options_str  += '<option value="843">843</option>';
+            No_Lote_options_str  += '<option value="844">844</option>';
+            No_Lote_options_str  += '<option value="845">845</option>';
+            No_Lote_options_str  += '<option value="846">846</option>';
+            No_Lote_options_str  += '<option value="847">847</option>';
+            No_Lote_options_str  += '<option value="848">848</option>';
+            No_Lote_options_str  += '<option value="849">849</option>';
+            No_Lote_options_str  += '<option value="850">850</option>';
+            No_Lote_options_str  += '<option value="851">851</option>';
+            No_Lote_options_str  += '<option value="852">852</option>';
+            No_Lote_options_str  += '<option value="853">853</option>';
+            No_Lote_options_str  += '<option value="856">856</option>';
+            No_Lote_options_str  += '<option value="857">857</option>';
+            No_Lote_options_str  += '<option value="858">858</option>';
+            No_Lote_options_str  += '<option value="860">860</option>';
+            No_Lote_options_str  += '<option value="861">861</option>';
+            No_Lote_options_str  += '<option value="862">862</option>';
+            No_Lote_options_str  += '<option value="863">863</option>';
+            No_Lote_options_str  += '<option value="865">865</option>';
+            No_Lote_options_str  += '<option value="866">866</option>';
+            No_Lote_options_str  += '<option value="867">867</option>';
+            No_Lote_options_str  += '<option value="868">868</option>';
+            No_Lote_options_str  += '<option value="869">869</option>';
+            No_Lote_options_str  += '<option value="87">87</option>';
+            No_Lote_options_str  += '<option value="870">870</option>';
+            No_Lote_options_str  += '<option value="871">871</option>';
+            No_Lote_options_str  += '<option value="872">872</option>';
+            No_Lote_options_str  += '<option value="873">873</option>';
+            No_Lote_options_str  += '<option value="874">874</option>';
+            No_Lote_options_str  += '<option value="876">876</option>';
+            No_Lote_options_str  += '<option value="877">877</option>';
+            No_Lote_options_str  += '<option value="878">878</option>';
+            No_Lote_options_str  += '<option value="88">88</option>';
+            No_Lote_options_str  += '<option value="880">880</option>';
+            No_Lote_options_str  += '<option value="881">881</option>';
+            No_Lote_options_str  += '<option value="882">882</option>';
+            No_Lote_options_str  += '<option value="883">883</option>';
+            No_Lote_options_str  += '<option value="885">885</option>';
+            No_Lote_options_str  += '<option value="89">89</option>';
+            No_Lote_options_str  += '<option value="891">891</option>';
+            No_Lote_options_str  += '<option value="892">892</option>';
+            No_Lote_options_str  += '<option value="893">893</option>';
+            No_Lote_options_str  += '<option value="894">894</option>';
+            No_Lote_options_str  += '<option value="895">895</option>';
+            No_Lote_options_str  += '<option value="896">896</option>';
+            No_Lote_options_str  += '<option value="898">898</option>';
+            No_Lote_options_str  += '<option value="899">899</option>';
+            No_Lote_options_str  += '<option value="900">900</option>';
+            No_Lote_options_str  += '<option value="901">901</option>';
+            No_Lote_options_str  += '<option value="902">902</option>';
+            No_Lote_options_str  += '<option value="903">903</option>';
+            No_Lote_options_str  += '<option value="904">904</option>';
+            No_Lote_options_str  += '<option value="906">906</option>';
+            No_Lote_options_str  += '<option value="907">907</option>';
+            No_Lote_options_str  += '<option value="908">908</option>';
+            No_Lote_options_str  += '<option value="909">909</option>';
+            No_Lote_options_str  += '<option value="910">910</option>';
+            No_Lote_options_str  += '<option value="911">911</option>';
+            No_Lote_options_str  += '<option value="913">913</option>';
+            No_Lote_options_str  += '<option value="915">915</option>';
+            No_Lote_options_str  += '<option value="917">917</option>';
+            No_Lote_options_str  += '<option value="919">919</option>';
+            No_Lote_options_str  += '<option value="920">920</option>';
+            No_Lote_options_str  += '<option value="922">922</option>';
+            No_Lote_options_str  += '<option value="924">924</option>';
+            No_Lote_options_str  += '<option value="925">925</option>';
+            No_Lote_options_str  += '<option value="926">926</option>';
+            No_Lote_options_str  += '<option value="927">927</option>';
+            No_Lote_options_str  += '<option value="928">928</option>';
+            No_Lote_options_str  += '<option value="929">929</option>';
+            No_Lote_options_str  += '<option value="93">93</option>';
+            No_Lote_options_str  += '<option value="930">930</option>';
+            No_Lote_options_str  += '<option value="932">932</option>';
+            No_Lote_options_str  += '<option value="934">934</option>';
+            No_Lote_options_str  += '<option value="936">936</option>';
+            No_Lote_options_str  += '<option value="937">937</option>';
+            No_Lote_options_str  += '<option value="938">938</option>';
+            No_Lote_options_str  += '<option value="939">939</option>';
+            No_Lote_options_str  += '<option value="941">941</option>';
+            No_Lote_options_str  += '<option value="942">942</option>';
+            No_Lote_options_str  += '<option value="945">945</option>';
+            No_Lote_options_str  += '<option value="946">946</option>';
+            No_Lote_options_str  += '<option value="947">947</option>';
+            No_Lote_options_str  += '<option value="948">948</option>';
+            No_Lote_options_str  += '<option value="949">949</option>';
+            No_Lote_options_str  += '<option value="950">950</option>';
+            No_Lote_options_str  += '<option value="951">951</option>';
+            No_Lote_options_str  += '<option value="952">952</option>';
+            No_Lote_options_str  += '<option value="953">953</option>';
+            No_Lote_options_str  += '<option value="954">954</option>';
+            No_Lote_options_str  += '<option value="955">955</option>';
+            No_Lote_options_str  += '<option value="956">956</option>';
+            No_Lote_options_str  += '<option value="959">959</option>';
+            No_Lote_options_str  += '<option value="96">96</option>';
+            No_Lote_options_str  += '<option value="961">961</option>';
+            No_Lote_options_str  += '<option value="962">962</option>';
+            No_Lote_options_str  += '<option value="966">966</option>';
+            No_Lote_options_str  += '<option value="969">969</option>';
+            No_Lote_options_str  += '<option value="974">974</option>';
+            No_Lote_options_str  += '<option value="976">976</option>';
+            No_Lote_options_str  += '<option value="978">978</option>';
+            No_Lote_options_str  += '<option value="98">98</option>';
+            No_Lote_options_str  += '<option value="980">980</option>';
+            No_Lote_options_str  += '<option value="981">981</option>';
+            No_Lote_options_str  += '<option value="982">982</option>';
+            No_Lote_options_str  += '<option value="983">983</option>';
+            No_Lote_options_str  += '<option value="984">984</option>';
+            No_Lote_options_str  += '<option value="985">985</option>';
+            No_Lote_options_str  += '<option value="986">986</option>';
+            No_Lote_options_str  += '<option value="987">987</option>';
+            No_Lote_options_str  += '<option value="990">990</option>';
+            No_Lote_options_str  += '<option value="991">991</option>';
+            No_Lote_options_str  += '<option value="993">993</option>';
+            No_Lote_options_str  += '<option value="994">994</option>';
+            No_Lote_options_str  += '<option value="996">996</option>';
+            No_Lote_options_str  += '<option value="998">998</option>';
+            No_Lote_options_str  += '<option value="999">999</option>';
+            No_Lote_options_str  += '<option value="<Nulo>"><Nulo></option>';
+            No_Lote_options_str  += '<option value="INDER">INDER</option>';
+            No_Lote_options_str  += '<option value="N/A">N/A</option>';
+            No_Lote_options_str  += '<option value="NA">NA</option>';
+            }
+            sel_No_Lote.innerHTML = No_Lote_options_str;
+            div_No_Lote.appendChild(sel_No_Lote);
+            var lab_No_Lote = document.createElement('div');
+            lab_No_Lote.innerHTML = 'No_Lote';
+            lab_No_Lote.className = 'filterlabel';
+            div_No_Lote.appendChild(lab_No_Lote);
+            var reset_No_Lote = document.createElement('div');
+            reset_No_Lote.innerHTML = 'clear filter';
+            reset_No_Lote.className = 'filterlabel';
+            reset_No_Lote.onclick = function() {
+                var options = document.getElementById("sel_No_Lote").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_No_Lote.appendChild(reset_No_Lote);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_Zona = document.createElement('div');
+            div_Zona.id = "div_Zona";
+            div_Zona.className= "filterselect";
+            document.getElementById("menu").appendChild(div_Zona);
+            sel_Zona = document.createElement('select');
+            sel_Zona.multiple = true;
+            sel_Zona.size = 8;
+            sel_Zona.id = "sel_Zona";
+            var Zona_options_str = "<option value='' unselected></option>";
+            sel_Zona.onchange = function(){filterFunc()};
+            Zona_options_str  += '<option value=""></option>';
+            Zona_options_str  += '<option value="Z1">Z1</option>';
+            Zona_options_str  += '<option value="Z2">Z2</option>';
+            Zona_options_str  += '<option value="Z3">Z3</option>';
+            Zona_options_str  += '<option value="Z4">Z4</option>';
+            Zona_options_str  += '<option value="Z5">Z5</option>';
+            Zona_options_str  += '<option value="Z6">Z6</option>';
+            Zona_options_str  += '<option value="Z7">Z7</option>';
+            sel_Zona.innerHTML = Zona_options_str;
+            div_Zona.appendChild(sel_Zona);
+            var lab_Zona = document.createElement('div');
+            lab_Zona.innerHTML = 'Zona';
+            lab_Zona.className = 'filterlabel';
+            div_Zona.appendChild(lab_Zona);
+            var reset_Zona = document.createElement('div');
+            reset_Zona.innerHTML = 'clear filter';
+            reset_Zona.className = 'filterlabel';
+            reset_Zona.onclick = function() {
+                var options = document.getElementById("sel_Zona").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_Zona.appendChild(reset_Zona);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_NOMBRE = document.createElement('div');
+            div_NOMBRE.id = "div_NOMBRE";
+            div_NOMBRE.className= "filterselect";
+            document.getElementById("menu").appendChild(div_NOMBRE);
+            sel_NOMBRE = document.createElement('select');
+            sel_NOMBRE.multiple = true;
+            sel_NOMBRE.size = 10;
+            sel_NOMBRE.id = "sel_NOMBRE";
+            var NOMBRE_options_str = "<option value='' unselected></option>";
+            sel_NOMBRE.onchange = function(){filterFunc()};
+            NOMBRE_options_str  += '<option value=" "> </option>';
+            NOMBRE_options_str  += '<option value="Altavista">Altavista</option>';
+            NOMBRE_options_str  += '<option value="Aranjuez">Aranjuez</option>';
+            NOMBRE_options_str  += '<option value="Belen">Belen</option>';
+            NOMBRE_options_str  += '<option value="Buenos Aires">Buenos Aires</option>';
+            NOMBRE_options_str  += '<option value="Castilla">Castilla</option>';
+            NOMBRE_options_str  += '<option value="Doce de Octubre">Doce de Octubre</option>';
+            NOMBRE_options_str  += '<option value="El Poblado">El Poblado</option>';
+            NOMBRE_options_str  += '<option value="Guayabal">Guayabal</option>';
+            NOMBRE_options_str  += '<option value="La America">La America</option>';
+            NOMBRE_options_str  += '<option value="La Candelaria">La Candelaria</option>';
+            NOMBRE_options_str  += '<option value="Laureles Estadio">Laureles Estadio</option>';
+            NOMBRE_options_str  += '<option value="Manrique">Manrique</option>';
+            NOMBRE_options_str  += '<option value="Palmitas">Palmitas</option>';
+            NOMBRE_options_str  += '<option value="Popular">Popular</option>';
+            NOMBRE_options_str  += '<option value="Robledo">Robledo</option>';
+            NOMBRE_options_str  += '<option value="San Antonio de Prado">San Antonio de Prado</option>';
+            NOMBRE_options_str  += '<option value="San Cristobal">San Cristobal</option>';
+            NOMBRE_options_str  += '<option value="San Javier">San Javier</option>';
+            NOMBRE_options_str  += '<option value="Santa Cruz">Santa Cruz</option>';
+            NOMBRE_options_str  += '<option value="Santa Elena">Santa Elena</option>';
+            NOMBRE_options_str  += '<option value="Villa Hermosa">Villa Hermosa</option>';
+            sel_NOMBRE.innerHTML = NOMBRE_options_str;
+            div_NOMBRE.appendChild(sel_NOMBRE);
+            var lab_NOMBRE = document.createElement('div');
+            lab_NOMBRE.innerHTML = 'NOMBRE';
+            lab_NOMBRE.className = 'filterlabel';
+            div_NOMBRE.appendChild(lab_NOMBRE);
+            var reset_NOMBRE = document.createElement('div');
+            reset_NOMBRE.innerHTML = 'clear filter';
+            reset_NOMBRE.className = 'filterlabel';
+            reset_NOMBRE.onclick = function() {
+                var options = document.getElementById("sel_NOMBRE").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_NOMBRE.appendChild(reset_NOMBRE);
+            var div_CUADRILLA = document.createElement('div');
+            div_CUADRILLA.id = "div_CUADRILLA";
+            div_CUADRILLA.className = "filterselect";
+            document.getElementById("menu").appendChild(div_CUADRILLA);
+            var sel_CUADRILLA = document.createElement('select');
+            sel_CUADRILLA.multiple = true;
+            sel_CUADRILLA.size = 10;
+            sel_CUADRILLA.id = "sel_CUADRILLA";
+            sel_CUADRILLA.onchange = function(){ filterFunc(); };
+            div_CUADRILLA.appendChild(sel_CUADRILLA);
+            var lab_CUADRILLA = document.createElement('div');
+            lab_CUADRILLA.innerHTML = 'CUADRILLA';
+            lab_CUADRILLA.className = 'filterlabel';
+            div_CUADRILLA.appendChild(lab_CUADRILLA);
+            var reset_CUADRILLA = document.createElement('div');
+            reset_CUADRILLA.innerHTML = 'clear filter';
+            reset_CUADRILLA.className = 'filterlabel';
+            reset_CUADRILLA.onclick = function() {
+                var options = document.getElementById("sel_CUADRILLA").options;
+                for (var i = 0; i < options.length; i++) options[i].selected = false;
+                filterFunc();
+            };
+            div_CUADRILLA.appendChild(reset_CUADRILLA);
+            // El listado histórico de lotes tiene miles de opciones: se cambia por búsqueda directa.
+            var filtroLotes = document.createElement('input');
+            filtroLotes.type = 'search';
+            filtroLotes.id = 'search_No_Lote';
+            filtroLotes.placeholder = 'Lotes separados por coma';
+            filtroLotes.onchange = filterFunc;
+            div_No_Lote.replaceChild(filtroLotes, sel_No_Lote);
+            reset_No_Lote.onclick = function() {
+                filtroLotes.value = '';
+                filterFunc();
+            };
+            // Orden de uso: la cuadrilla es el filtro principal.
+            var menuFiltros = document.getElementById('menu');
+            [div_CUADRILLA, div_No_Lote, div_Zona, div_NOMBRE].forEach(function(filtro){
+                menuFiltros.appendChild(filtro);
+            });
+            updateDynamicFilters();
+        </script>        
+        <script src="js/buscar_direccion.js"></script>
+    </body>
+</html>
