@@ -1,0 +1,1791 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Subsanaciones de lotes</title>
+    <style>
+    :root { --brand: #167a55; --brand-dark: #0f6847; --ink: #1f2937; --muted: #64748b; --line: #dce4e8; --surface: #ffffff; --bg: #f3f6f5;
+            --pend: #b91c1c; --pend-bg: #fee2e2; --ok: #15803d; --ok-bg: #dcfce7; --sn: #1d4ed8; --sn-bg: #dbeafe; }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: var(--ink); background: var(--bg); font-size: 14px; }
+    header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px max(16px, calc((100% - 1320px) / 2 + 16px)); background: var(--surface); border-bottom: 1px solid var(--line); }
+    header .marca { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    header .logo { flex: none; width: 40px; height: 40px; border-radius: 11px; background: #e3f4ec; display: grid; place-items: center; font-size: 21px; }
+    header .nombre { min-width: 0; }
+    header h1 { margin: 0; font-size: 21px; line-height: 1.15; font-weight: 800; letter-spacing: -.01em; }
+    header .lema { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-mapas { display: flex; gap: 6px; }
+    .nav-mapas a { color: var(--brand); text-decoration: none; font-weight: 650; padding: 7px 11px; border: 1px solid var(--line); border-radius: 9px; white-space: nowrap; background: #fff; }
+    .nav-mapas a:hover { background: #edf8f3; }
+    .corto { display: none; }
+    main { max-width: 1320px; margin: 0 auto; padding: 16px; }
+    button, .boton { font: inherit; border-radius: 8px; border: 0; padding: 8px 14px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; }
+    .primario { color: #fff; background: var(--brand); }
+    .primario:hover { background: var(--brand-dark); }
+    .secundario { color: var(--brand); background: #edf8f3; }
+    .peligro { color: var(--pend); background: var(--pend-bg); }
+    .pequeno { padding: 5px 10px; font-size: 12px; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .tarjeta { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+    .tarjeta.activa { outline: 2px solid var(--brand); }
+    .tarjeta .num { font-size: 24px; font-weight: 700; }
+    .tarjeta .tit { font-size: 12px; color: var(--muted); }
+    .filtros { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .filtros input, .filtros select { min-height: 38px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font: inherit; background: #fff; color: var(--ink); }
+    .filtros input { flex: 1; min-width: 200px; }
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: 12px; color: var(--muted); font-weight: 650; background: #f8fafb; }
+    tr:last-child td { border-bottom: 0; }
+    td.acciones { white-space: nowrap; }
+    .vacio { padding: 30px; text-align: center; color: var(--muted); }
+    .estado { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 650; white-space: nowrap; }
+    .e-PENDIENTE { color: var(--pend); background: var(--pend-bg); }
+    .e-SUBSANADO { color: var(--ok); background: var(--ok-bg); }
+    .e-SIN-NOVEDAD { color: var(--sn); background: var(--sn-bg); }
+    .e-CERRADO { color: #334155; background: #e2e8f0; }
+    .lote-cerrado { color: #334155; background: #e2e8f0; }
+    /* Aviso de visita reciente según la frecuencia del lote */
+    .reciente { grid-column: 1 / -1; padding: 9px 12px; border-radius: 10px; font-size: 13px; line-height: 1.45; background: #f1f5f9; color: #475569; }
+    .reciente.alerta { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+    .reciente.alerta b { color: #7c2d12; }
+    .detalle .fila-btn { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .detalle .fila-btn .peligro { padding: 11px 14px; }
+    .chip { display: inline-block; margin: 0 4px 4px 0; padding: 2px 8px; border-radius: 6px; font-size: 12px; color: var(--pend); background: var(--pend-bg); }
+    .sub { font-size: 12px; color: var(--muted); }
+    .aviso { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; line-height: 1.5; }
+    .aviso.error { background: var(--pend-bg); border-color: #fecaca; }
+    .cargando { padding: 30px; text-align: center; color: var(--muted); }
+    dialog { border: 0; border-radius: 14px; padding: 0; width: min(820px, calc(100% - 24px)); max-height: calc(100dvh - 24px); box-shadow: 0 20px 50px rgba(15, 45, 35, .3); }
+    dialog::backdrop { background: rgba(15, 30, 25, .45); }
+    /* Con un formulario abierto la página de atrás no se mueve; el scroll se queda dentro del formulario */
+    html:has(dialog[open]) { overflow: hidden; }
+    dialog { overscroll-behavior: contain; }
+    /* Título del formulario fijo arriba, con la X siempre a mano */
+    #dlg h2 { position: sticky; top: 0; z-index: 5; background: var(--surface); margin: -18px -18px 14px; padding: 14px 18px 12px; border-bottom: 1px solid var(--line); }
+    .cerrar-dlg { margin-left: auto; width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 50%; background: #eef2f1; color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; }
+    .cerrar-dlg:hover { background: #dfe7e4; }
+    /* Tipo de visita: al lote ya ejecutado o durante la operación */
+    .tipo-visita { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 14px; }
+    .tipo-visita input { position: absolute; opacity: 0; pointer-events: none; }
+    .tipo-visita label { margin: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; font-size: 14px; color: var(--ink); text-align: center; }
+    .tipo-visita label small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+    .tipo-visita input:checked + label { border-color: var(--brand); background: #edf8f3; box-shadow: inset 0 0 0 1px var(--brand); }
+    .tipo-visita #tipo-op:checked + label { border-color: #c2410c; background: #fff7ed; box-shadow: inset 0 0 0 1px #c2410c; }
+    .tipo-visita input:focus-visible + label { outline: 2px solid var(--brand); outline-offset: 2px; }
+    /* "Tener en cuenta" de la visita durante la operación: informativo, no se guarda */
+    .recordatorios { margin: 0 0 14px; padding: 10px 12px 10px 14px; border-radius: 10px; background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; font-size: 13px; line-height: 1.45; color: #78350f; }
+    .recordatorios b { display: block; margin-bottom: 4px; font-size: 13px; color: #92400e; }
+    .recordatorios ul { margin: 0; padding-left: 18px; }
+    .recordatorios li + li { margin-top: 3px; }
+    .tag-op { display: inline-block; font-size: 11px; font-weight: 700; color: #9a3412; background: #ffedd5; padding: 1px 7px; border-radius: 99px; vertical-align: middle; }
+    dialog form { padding: 18px; }
+    dialog h2 { margin: 0 0 14px; font-size: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .grid .doble { grid-column: span 2; }
+    .grid .ancho { grid-column: 1 / -1; }
+    label { display: block; font-size: 12px; font-weight: 650; color: #475569; }
+    label input, label select, label textarea { display: block; width: 100%; margin-top: 4px; min-height: 38px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font: inherit; color: var(--ink); background: #fff; font-weight: 400; }
+    label textarea { min-height: 64px; resize: vertical; }
+    .direccion { grid-column: 1 / -1; margin-top: -4px; }
+    fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 0; }
+    legend { font-size: 12px; font-weight: 700; color: var(--brand); padding: 0 6px; }
+    .item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+    .item:last-of-type { border-bottom: 0; }
+    .opciones { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+    .opciones input { position: absolute; opacity: 0; pointer-events: none; }
+    .opciones label { margin: 0; padding: 6px 12px; cursor: pointer; font-weight: 600; color: var(--muted); border-left: 1px solid var(--line); }
+    .opciones label:first-of-type { border-left: 0; }
+    .opciones input:checked + label.si { color: #fff; background: var(--ok); }
+    .opciones input:checked + label.no { color: #fff; background: var(--pend); }
+    .opciones input:checked + label.na { color: #fff; background: #64748b; }
+    .opciones input:focus-visible + label { outline: 2px solid var(--brand); outline-offset: -2px; }
+    .pie { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px; z-index: 50; display: none; max-width: calc(100% - 32px); }
+    fieldset { min-width: 0; }
+    .acciones-top { display: contents; }
+    #dlg-wa { width: min(480px, calc(100% - 24px)); height: auto; margin: auto; border-radius: 14px; }
+    #dlg-wa .cuerpo { padding: 18px; }
+    #wa-texto { display: block; width: 100%; min-height: 190px; border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: inherit; font-size: 15px; color: var(--ink); resize: vertical; }
+    .wa { color: #fff; background: #1f9d55; }
+    .detalle .wa-btn { width: 100%; padding: 11px; margin-top: 8px; }
+    /* Buscador de microrruta / lote (reemplaza el datalist, que en el celular casi no se ve) */
+    .buscador { position: relative; }
+    .sugerencias { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; margin-top: 4px; background: #fff; border: 1px solid #b8c6cd; border-radius: 10px;
+                   box-shadow: 0 10px 28px rgba(15, 45, 35, .22); max-height: min(340px, 50dvh); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .sugerencias button { display: block; width: 100%; text-align: left; background: #fff; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 10px 12px; font-weight: 400; color: var(--ink); }
+    .sugerencias button:last-child { border-bottom: 0; }
+    .sugerencias button:hover, .sugerencias button.activa { background: #edf8f3; }
+    .sugerencias .s-mr { font-weight: 700; font-size: 15px; }
+    .sugerencias .s-mr small { font-weight: 600; color: var(--muted); font-size: 12px; margin-left: 6px; }
+    .sugerencias .s-dir { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .sugerencias mark { background: #fef08a; color: inherit; border-radius: 2px; }
+    .sugerencias .s-vacio { padding: 12px; color: var(--muted); font-size: 13px; }
+    /* Pre-ruta: lotes que mandan a revisar */
+    .ruta { margin-bottom: 12px; display: grid; gap: 10px; justify-items: start; }
+    .ruta > * { width: 100%; }
+    .ruta > .otra { width: auto; }
+    .ruta-vacia { text-align: left; background: #fff; border: 2px dashed #9fd3bd; color: var(--ink); padding: 14px 16px; border-radius: 12px; font-weight: 400; }
+    .ruta-vacia .sub { display: block; margin-top: 2px; }
+    .ruta-card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 12px; overflow: hidden; }
+    .ruta-cab { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px 8px; }
+    .ruta-cab > div { flex: 1; min-width: 0; }
+    .ruta-cab b { font-size: 16px; }
+    .ruta-quitar { background: transparent; color: var(--muted); padding: 4px 8px; font-size: 20px; line-height: 1; }
+    .ruta-cab [data-ruta="plegar"] { cursor: pointer; }
+    .ruta-plegar { background: transparent; color: var(--muted); padding: 4px 8px; font-size: 18px; line-height: 1; transition: transform .2s; }
+    .ruta-card.plegada .ruta-plegar { transform: rotate(-90deg); }
+    .ruta-card.plegada .ruta-acciones, .ruta-card.plegada .paradas { display: none; }
+    .ruta-card.plegada .progreso { margin-bottom: 12px; }
+    .progreso { height: 6px; background: #e8efec; margin: 0 14px; border-radius: 99px; overflow: hidden; }
+    .progreso span { display: block; height: 100%; background: var(--ok); }
+    .ruta-acciones { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+    .paradas { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+    .parada { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 4px 10px; align-items: start; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+    .parada:last-child { border-bottom: 0; }
+    .parada .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: #e8efec; }
+    .parada.siguiente { background: #f2fbf7; }
+    .parada.siguiente .n { background: var(--brand); color: #fff; }
+    .parada.hecha .n { background: var(--ok-bg); color: var(--ok); }
+    .parada.hecha .titulo b { color: var(--muted); }
+    .parada .dir { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .parada .alerta { color: var(--pend); }
+    .parada .btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .no-realizado { color: var(--pend); background: var(--pend-bg); }
+    .tag-despues { font-size: 11px; font-weight: 700; color: var(--muted); background: #eef2f4; padding: 1px 7px; border-radius: 99px; }
+    .tag-sig { font-size: 11px; font-weight: 700; color: #fff; background: var(--brand); padding: 1px 7px; border-radius: 99px; }
+    /* Lote que la cuadrilla está ejecutando ahora (mensaje "inicia labores...") */
+    .tag-curso { font-size: 11px; font-weight: 700; color: #fff; background: #2563eb; padding: 1px 7px; border-radius: 99px; }
+    .parada.encurso { background: #eff6ff; }
+    .parada.encurso .n { background: #2563eb; color: #fff; font-size: 11px; }
+    .tipo-ruta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .tipo-ruta input { position: absolute; opacity: 0; pointer-events: none; }
+    .tipo-ruta label { margin: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; font-size: 13px; color: var(--ink); text-align: center; }
+    .tipo-ruta label small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+    .tipo-ruta input:checked + label { border-color: var(--brand); background: #edf8f3; box-shadow: inset 0 0 0 1px var(--brand); }
+    .tipo-ruta #ruta-tipo-curso:checked + label { border-color: #2563eb; background: #eff6ff; box-shadow: inset 0 0 0 1px #2563eb; }
+    .tipo-ruta input:focus-visible + label { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .tipo-ruta .ancho-tipo { grid-column: 1 / -1; }
+    .chip-ruta .curso { color: #1d4ed8; font-weight: 700; }
+    .chip-ruta { display: inline-block; margin: 6px 6px 0 0; padding: 4px 9px; border-radius: 8px; background: #edf8f3; font-size: 13px; }
+    .chip-ruta.aviso { background: #fff7ed; color: #9a3412; }
+    #dlg-ruta { width: min(560px, calc(100% - 24px)); height: auto; margin: auto; border-radius: 14px; }
+    #dlg-ruta .cuerpo { padding: 18px; }
+    #ruta-texto { min-height: 140px; }
+    .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .contexto { margin: -4px 0 14px; padding: 10px 12px; border-radius: 10px; background: #edf8f3; border-left: 4px solid var(--brand); font-size: 13px; line-height: 1.45; }
+    .contexto b { font-size: 15px; }
+    .contexto .desc { margin-top: 4px; color: #475569; max-height: 4.4em; overflow: hidden; }
+    .contexto .desc.abierta { max-height: none; }
+    .contexto .historial { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #9fd3bd; }
+    .contexto button { margin-top: 6px; }
+    .ir-mapa { margin-bottom: 12px; }
+    .ir-mapa input { width: 100%; min-height: 42px; border: 1px solid #b8c6cd; border-radius: 10px; padding: 8px 12px 8px 36px; font: inherit; color: var(--ink);
+                     background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%23167a55' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z'/%3E%3Ccircle cx='12' cy='9.5' r='2.5'/%3E%3C/svg%3E") no-repeat 11px center; }
+    .ir-mapa .s-ir { float: right; font-size: 12px; font-weight: 650; color: var(--brand); }
+    .enlace-mapa { color: var(--brand); font-weight: 650; text-decoration: none; white-space: nowrap; }
+    .limpiar { position: absolute; right: 4px; bottom: 4px; width: 32px; height: 32px; padding: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; }
+    /* Lista compacta para celular: solo lo importante y "Ver detalles" despliega el resto */
+    .movil { display: none; }
+    .visita { border-bottom: 1px solid var(--line); }
+    .visita:last-child { border-bottom: 0; }
+    .visita summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; }
+    .visita summary::-webkit-details-marker { display: none; }
+    .lote-tit { display: block; font-size: 18px; font-weight: 800; white-space: nowrap; }
+    .visita .mr { font-weight: 800; font-size: 19px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .visita .mr .cod { font-weight: 500; font-size: 13px; color: var(--muted); margin-left: 6px; }
+    .visita .linea { grid-column: 1; font-size: 13px; color: var(--muted); }
+    .visita .linea .alerta { color: var(--pend); font-weight: 650; }
+    .visita .ver { grid-column: 2; justify-self: end; font-size: 13px; font-weight: 650; color: var(--brand); white-space: nowrap; }
+    .visita .ver::after { content: " ▾"; }
+    .visita[open] .ver::after { content: " ▴"; }
+    .visita .ver .menos, .visita[open] .ver .mas { display: none; }
+    .visita[open] .ver .menos { display: inline; }
+    .visita[open] summary { background: #f8fafb; }
+    .detalle { padding: 4px 14px 14px; background: #f8fafb; }
+    .detalle dl { margin: 0 0 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+    .detalle dl div.ancho { grid-column: 1 / -1; }
+    .detalle dt { font-size: 11px; color: var(--muted); font-weight: 650; text-transform: uppercase; }
+    .detalle dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+    .detalle .editar { width: 100%; padding: 11px; }
+    .detalle .subsanar { width: 100%; padding: 11px; margin-bottom: 8px; color: #fff; background: var(--ok); border-color: var(--ok); }
+    .detalle .subsanar.pequeno { width: auto; padding: 6px 10px; margin: 8px 8px 0 0; }
+    tr.fila-detalle td { padding: 0; }
+    tr.fila-detalle .detalle { padding: 14px 16px; border-left: 3px solid var(--brand); }
+    tr.fila-detalle .detalle dl { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; }
+    tr:has(+ tr.fila-detalle:not([hidden])) td { border-bottom: 0; background: #f8fafb; }
+    @media (max-width: 760px) {
+        body { font-size: 15px; }
+        header { padding: 10px 16px; gap: 8px; }
+        header .logo { width: 36px; height: 36px; font-size: 19px; border-radius: 10px; }
+        header h1 { font-size: 19px; }
+        .largo { display: none; }
+        .corto { display: inline; }
+        .nav-mapas a { padding: 7px 9px; font-size: 13px; }
+        header .acciones-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 6px; width: 100%; }
+        header .acciones-top > * { padding: 7px 4px; font-size: 13px; text-align: center; white-space: nowrap; }
+        header .acciones-top > [hidden] { display: none; }
+        main { padding: 12px 16px 90px; }
+        .resumen { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+        .tarjeta { padding: 8px 6px; text-align: center; }
+        .tarjeta .num { font-size: 20px; }
+        .tarjeta .tit { font-size: 11px; line-height: 1.2; }
+        .filtros { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+        .filtros input { grid-column: 1 / -1; min-width: 0; }
+        .filtros select { min-width: 0; font-size: 13px; }
+        .escritorio { display: none; }
+        .movil { display: block; }
+        /* "+ Nueva visita" flotante, siempre a mano con el pulgar */
+        #btn-nuevo { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 20; padding: 14px 20px; border-radius: 999px; box-shadow: 0 6px 18px rgba(15, 80, 55, .35); }
+        .toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+        /* Formulario a pantalla completa */
+        dialog { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; overflow-y: auto; }
+        dialog form { padding: 16px 16px 0; }
+        .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        /* 16px evita que iOS haga zoom al tocar un campo */
+        label input, label select, label textarea, .filtros input, .filtros select, .ir-mapa input { font-size: 16px; }
+        label input, label select, label textarea { border-color: #b8c6cd; min-height: 44px; }
+        .sugerencias button { padding: 12px 14px; }
+        .parada { grid-template-columns: 30px minmax(0, 1fr); }
+        /* Botones de la parada a todo el ancho de la tarjeta, en una sola fila */
+        .parada .btns { grid-column: 1 / -1; justify-content: flex-start; gap: 5px; }
+        .parada .btns > * { padding: 9px 10px; font-size: 13px; }
+        .ruta-acciones > * { padding: 9px 12px; font-size: 13px; }
+        input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; text-align: left; }
+        input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+        legend { white-space: normal; }
+        .item span:first-child { min-width: 0; }
+        .opciones label { padding: 9px 14px; }
+        .pie { position: sticky; bottom: 0; margin: 16px -16px 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--line); }
+        .pie button { padding: 11px 16px; }
+    }
+    /* Celulares angostos: sin el ícono para que el nombre no se corte */
+    @media (max-width: 400px) {
+        header .logo { display: none; }
+        header h1 { font-size: 18px; }
+        .nav-mapas { gap: 5px; }
+        .nav-mapas a { padding: 7px 8px; }
+        .parada .btns { flex-wrap: nowrap; gap: 4px; }
+        .parada .btns > * { flex: 1 1 auto; padding: 9px 5px; font-size: 12px; text-align: center; white-space: nowrap; }
+    }
+    </style>
+</head>
+<body>
+<header>
+    <div class="marca">
+        <span class="logo" aria-hidden="true">📋</span>
+        <div class="nombre"><h1>Subsanaciones</h1><div class="lema">Revisión de lotes · Zonas verdes</div></div>
+    </div>
+    <nav class="nav-mapas" aria-label="Mapas">
+        <a href="index.html" title="Mapa completo con todas las capas">🗺️ <span class="largo">Mapa completo</span><span class="corto">Mapa</span></a>
+        <a href="mapa_rapido.html" title="Mapa rápido">⚡ <span class="largo">Mapa rápido</span><span class="corto">Rápido</span></a>
+    </nav>
+    <div class="acciones-top">
+        <a class="boton secundario" id="abrir-hoja" target="_blank" hidden>📄 <span class="largo">Abrir hoja en </span>Drive</a>
+        <button type="button" class="secundario" id="btn-excel">⬇ <span class="largo">Descargar </span>Excel</button>
+        <button type="button" class="secundario" id="btn-recargar">↻ Actualizar</button>
+    </div>
+    <button type="button" class="primario" id="btn-nuevo">+ Nueva visita</button>
+</header>
+<main>
+    <section class="ruta" id="ruta" aria-label="Pre-ruta del día"></section>
+    <div class="buscador ir-mapa">
+        <input id="ir-mapa" data-buscar="mr" type="search" placeholder="Ir al mapa: lote, microrruta, dirección o coordenadas" aria-label="Buscar lote en el mapa"
+               autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="go">
+    </div>
+    <div id="aviso"></div>
+    <div class="resumen" id="resumen"></div>
+    <div class="filtros">
+        <input type="search" id="f-texto" placeholder="Buscar por microrruta, lote, interventor, observaciones…">
+        <select id="f-estado" aria-label="Estado">
+            <option value="">Estado: todos</option><option value="PENDIENTE">Pendiente</option><option value="SUBSANADO">Subsanado</option><option value="SIN NOVEDAD">Sin novedad</option><option value="CERRADO">Lote cerrado</option>
+        </select>
+        <select id="f-tipo" aria-label="Tipo de visita">
+            <option value="">Tipo: todas</option><option value="EJECUCIÓN">Lote ejecutado</option><option value="OPERACIÓN">Durante la operación</option>
+        </select>
+        <select id="f-zona" aria-label="Zona"><option value="">Zona: todas</option></select>
+        <select id="f-cuadrilla" aria-label="Cuadrilla"><option value="">Cuadrilla: todas</option></select>
+    </div>
+    <div class="panel"><div id="tabla"><div class="cargando">Cargando…</div></div></div>
+</main>
+
+<dialog id="dlg">
+    <form id="form" method="dialog" autocomplete="off">
+        <h2><span id="dlg-titulo">Nueva visita</span> <span class="estado" id="dlg-estado"></span>
+            <button type="button" class="cerrar-dlg" id="dlg-cerrar" aria-label="Cerrar sin guardar" title="Cerrar sin guardar">×</button></h2>
+        <div class="tipo-visita" id="tipo-visita" role="radiogroup" aria-label="Tipo de visita">
+            <input type="radio" name="tipo-visita" id="tipo-ej" value="EJECUCIÓN" checked><label for="tipo-ej">🌿 Lote ejecutado<small>Revisión después del corte</small></label>
+            <input type="radio" name="tipo-visita" id="tipo-op" value="OPERACIÓN"><label for="tipo-op">🦺 Durante la operación<small>PMT, valla, mallas, EPP…</small></label>
+        </div>
+        <div class="contexto" id="dlg-contexto" hidden></div>
+        <div class="recordatorios" id="dlg-recordatorios" hidden></div>
+        <div class="grid">
+            <div class="doble buscador">
+                <label>MICRORRUTA <input data-campo="MICRORRUTA" data-buscar="mr" placeholder="Microrruta, lote o dirección" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="search"></label>
+                <button type="button" class="limpiar" data-limpiar aria-label="Borrar microrruta y lote" hidden>×</button>
+            </div>
+            <div class="buscador">
+                <label>LOTE <input data-campo="LOTE" data-buscar="lote" inputmode="numeric" placeholder="N.º de lote" enterkeyhint="search"></label>
+            </div>
+            <label>ÁREA M2 <input data-campo="ÁREA M2"></label>
+            <div class="direccion sub" id="dlg-direccion"></div>
+            <div class="reciente" id="dlg-reciente" hidden></div>
+            <label>ZONA <input data-campo="ZONA"></label>
+            <label>CUADRILLA <input data-campo="CUADRILLA"></label>
+            <label class="doble">INTERVENTOR <input data-campo="INTERVENTOR" placeholder="Iniciales"></label>
+            <label class="doble" id="campo-ejecucion">FECHA DE EJECUCIÓN <input type="date" data-campo="FECHA DE EJECUCIÓN"></label>
+            <label class="doble" id="campo-visita">FECHA DE LA VISITA <input type="date" data-campo="FECHA DE LA VISITA"></label>
+            <fieldset class="ancho">
+                <legend id="items-titulo">Ítems revisados (SI = cumple · NO = requiere subsanación)</legend>
+                <div id="items"></div>
+                <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
+                    <button type="button" class="secundario pequeno" id="todo-si">Marcar todos SI</button>
+                    <button type="button" class="pequeno no-realizado solo-ej" id="no-realizado">✗ Lote no realizado</button>
+                    <button type="button" class="pequeno lote-cerrado solo-ej" id="lote-cerrado">🔒 Lote cerrado</button>
+                </div>
+            </fieldset>
+            <label class="ancho">OBSERVACIONES NOVEDADES <textarea data-campo="OBSERVACIONES NOVEDADES" placeholder="SIN NOVEDAD"></textarea></label>
+            <fieldset class="ancho">
+                <legend>Subsanación</legend>
+                <div class="grid">
+                    <label class="doble">FECHA SUBSANACIÓN <input type="date" data-campo="FECHA SUBSANACIÓN"></label>
+                    <label class="doble">REGISTRADO POR <input data-campo="REGISTRADO POR"></label>
+                    <label class="ancho">EVIDENCIA (link de fotos / Drive) <input type="url" data-campo="EVIDENCIA" placeholder="https://"></label>
+                    <label class="ancho">OBSERVACIÓN SUBSANACIÓN <textarea data-campo="OBSERVACIÓN SUBSANACIÓN"></textarea></label>
+                </div>
+            </fieldset>
+        </div>
+        <div class="pie">
+            <button type="button" class="peligro" id="btn-eliminar" hidden>Eliminar</button>
+            <span style="flex:1"></span>
+            <button type="button" class="secundario" id="btn-cancelar">Cancelar</button>
+            <button type="submit" class="primario" id="btn-guardar">Guardar</button>
+        </div>
+    </form>
+</dialog>
+<dialog id="dlg-wa">
+    <div class="cuerpo">
+        <h2>Resumen para WhatsApp</h2>
+        <textarea id="wa-texto" aria-label="Texto del resumen"></textarea>
+        <div class="sub" style="margin-top:6px">Puede ajustar el texto antes de copiarlo.</div>
+        <div class="pie">
+            <button type="button" class="secundario" id="wa-cerrar">Cerrar</button>
+            <a class="boton secundario" id="wa-abrir" target="_blank" rel="noopener">Abrir WhatsApp</a>
+            <button type="button" class="wa" id="wa-copiar">Copiar</button>
+        </div>
+    </div>
+</dialog>
+<dialog id="dlg-ruta">
+    <div class="cuerpo">
+        <h2>Lotes a revisar</h2>
+        <label>MENSAJE CON LOTES
+            <textarea id="ruta-texto" placeholder="Lotes ejecutados el 14-10-2026 por la cuadrilla #2&#10;&#10;532&#10;371&#10;363"></textarea>
+        </label>
+        <button type="button" class="secundario pequeno" id="ruta-pegar" style="margin-top:6px">Pegar del portapapeles</button>
+        <div class="dos">
+            <label>FECHA DE EJECUCIÓN <input type="date" id="ruta-fecha"></label>
+            <label>CUADRILLA <input id="ruta-cuad" inputmode="numeric"></label>
+        </div>
+        <div class="tipo-ruta" role="radiogroup" aria-label="Qué dice el mensaje">
+            <input type="radio" name="ruta-tipo" id="ruta-tipo-hecho" value="hecho" checked><label for="ruta-tipo-hecho">✓ Ejecutados<small>listos para revisar</small></label>
+            <input type="radio" name="ruta-tipo" id="ruta-tipo-curso" value="curso"><label for="ruta-tipo-curso">▶ En ejecución ahora<small>la cuadrilla está ahí</small></label>
+            <input type="radio" name="ruta-tipo" id="ruta-tipo-auto" value="auto"><label for="ruta-tipo-auto" class="ancho-tipo" hidden>Según el mensaje<small>unos ejecutados y otro en ejecución</small></label>
+        </div>
+        <div id="ruta-vista" style="margin-top:10px"></div>
+        <div class="pie">
+            <button type="button" class="secundario" id="ruta-cancelar">Cancelar</button>
+            <button type="button" class="primario" id="ruta-crear">Crear pre-ruta</button>
+        </div>
+    </div>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script src="js/subsanaciones_config.js"></script>
+<script src="data/direcciones_lotes.js"></script>
+<script src="data/centros_lotes.js"></script>
+<script src="data/puntos_lotes.js"></script>
+<script src="js/coordenadas.js"></script>
+<script>
+(function () {
+    var CFG = window.SUBSANACIONES_CONFIG || {};
+    var LOTES = window.direccionesLotes || {};
+    var FIJAS = ['MICRORRUTA', 'LOTE', 'ÁREA M2', 'ZONA', 'CUADRILLA', 'FECHA DE EJECUCIÓN', 'FECHA DE LA VISITA', 'INTERVENTOR',
+        'OBSERVACIONES NOVEDADES', 'CANTIDAD DE NOVEDADES', 'ESTADO', 'FECHA SUBSANACIÓN', 'OBSERVACIÓN SUBSANACIÓN', 'EVIDENCIA', 'ID', 'REGISTRADO POR',
+        'ÚLTIMA MODIFICACIÓN', 'ÍTEMS SUBSANADOS', 'FECHA DE REGISTRO'];
+    var FECHAS = ['FECHA DE EJECUCIÓN', 'FECHA DE LA VISITA', 'FECHA SUBSANACIÓN'];
+    var items = [], columnas = [], registros = [], editando = null, abiertos = {};
+    // Dos tipos de visita: al lote ya ejecutado (hoja "Subsanaciones", SUB-) y durante la operación (hoja "Operación", OPE-)
+    var EJ = 'EJECUCIÓN', OP = 'OPERACIÓN';
+    var itemsOp = [], columnasOp = [], hayOperacion = false, tipoForm = EJ;
+    // "Tener en cuenta" de la visita durante la operación. La hoja "Recordatorios Operación" los reemplaza al cargar.
+    var recordatorios = [
+        'Telas auxiliares, vallas y demás elementos de información del contrato: no deben figurar contratos viejos.',
+        'Validar el estado de los elementos del equipo operativo (herramientas, dotación, EPP).',
+        'Verificar que la cuadrilla delimite el área de trabajo y cuente con los elementos para hacerlo.',
+        'Las evidencias de las novedades subsanadas se deben remitir oportunamente, al momento de subsanar (evitar solicitudes reiteradas).'
+    ];
+    function esOp(r) { return !!r && (r.TIPO === OP || /^OPE-/.test(r.ID || '')); }
+    function itemsDe(r) { return esOp(r) ? itemsOp : items; }
+    function itemsForm() { return tipoForm === OP ? itemsOp : items; }
+    var cargado = false, alCargar = null, desdeRuta = null, rutasAlDia = false;
+    var $ = function (id) { return document.getElementById(id); };
+    var dlg = $('dlg'), form = $('form');
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+    function norm(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toUpperCase(); }
+    function valorItem(v) { v = norm(v).replace(/[.\s]/g, ''); return v === 'SI' ? 'SI' : v === 'NO' ? 'NO' : (v === 'NA' || v === 'N/A') ? 'N/A' : ''; }
+    function hoy() { var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+    // La hoja guarda dd/mm/aaaa como el Excel; el selector de fecha usa aaaa-mm-dd
+    function aInput(s) {
+        var m = String(s || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (m) return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+        m = String(s || '').match(/^\d{4}-\d{2}-\d{2}/);
+        return m ? m[0] : '';
+    }
+    function aTexto(s) { var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? m[3] + '/' + m[2] + '/' + m[1] : s; }
+    function dias(desde) { var a = aInput(desde); return a ? Math.floor((new Date(hoy()) - new Date(a)) / 864e5) : null; }
+    function toast(msg) { var t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { t.style.display = 'none'; }, 3500); }
+    function aviso(html, error) { $('aviso').innerHTML = html ? '<div class="aviso' + (error ? ' error' : '') + '">' + html + '</div>' : ''; }
+
+    // ---------- API (Apps Script) ----------
+    function clave() { try { return localStorage.getItem('subsanaciones_clave') || ''; } catch (e) { return ''; } }
+    function respuesta(r) {
+        return r.json().then(function (d) { if (!d.ok) throw new Error(d.error || 'Error desconocido'); return d; });
+    }
+    function conClave(fn) {
+        return fn().catch(function (err) {
+            if (err.message !== 'CLAVE_INVALIDA') throw err;
+            var c = prompt('Escriba la clave de subsanaciones:');
+            if (c === null) throw new Error('Se necesita la clave para continuar.');
+            try { localStorage.setItem('subsanaciones_clave', c); } catch (e) {}
+            return conClave(fn);
+        });
+    }
+    function leer() {
+        return conClave(function () { return fetch(CFG.url + '?clave=' + encodeURIComponent(clave())).then(respuesta); });
+    }
+    function enviar(accion, datos) {
+        // text/plain evita la verificación CORS previa que Apps Script no responde
+        return conClave(function () {
+            var cuerpo = Object.assign({ accion: accion, clave: clave() }, datos);
+            return fetch(CFG.url, { method: 'POST', body: JSON.stringify(cuerpo) }).then(respuesta);
+        });
+    }
+
+    // Deja cada registro con los nombres de columna conocidos aunque en la hoja tengan otra tilde o espacios
+    // Visita más reciente primero; el mismo día, la última registrada (ID mayor) arriba.
+    // Acepta 18/10/2026, 18-10-26, 2026-10-18 o con hora, como venga del Excel pegado en la hoja.
+    function claveFecha(s) {
+        s = String(s || '').trim();
+        var m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+        if (m) return m[1] + ('0' + m[2]).slice(-2) + ('0' + m[3]).slice(-2);
+        m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4}|\d{2})\b/);
+        return m ? (m[3].length === 2 ? '20' + m[3] : m[3]) + ('0' + m[2]).slice(-2) + ('0' + m[1]).slice(-2) : '';
+    }
+    function ordenarRegistros() {
+        var num = function (r) { return Number(String(r.ID || '').replace(/\D/g, '')) || 0; };
+        registros.sort(function (a, b) {
+            return claveFecha(b['FECHA DE LA VISITA']).localeCompare(claveFecha(a['FECHA DE LA VISITA'])) || num(b) - num(a);
+        });
+    }
+    // La lista muestra primero lo último registrado (FECHA DE REGISTRO; si la hoja aún no la tiene, la última modificación).
+    // registros sigue ordenado por fecha de visita: de eso dependen la frecuencia, la "última visita" y la pre-ruta.
+    function claveRegistro(r) {
+        var m = String(r['FECHA DE REGISTRO'] || r['ÚLTIMA MODIFICACIÓN'] || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+        var z = function (n) { return ('0' + (n || 0)).slice(-2); };
+        return m ? m[3] + z(m[2]) + z(m[1]) + z(m[4]) + z(m[5]) + z(m[6]) : claveFecha(r['FECHA DE LA VISITA']) + '000000';
+    }
+    function porRegistro(a, b) {
+        var num = function (r) { return Number(String(r.ID || '').replace(/\D/g, '')) || 0; };
+        return claveRegistro(b).localeCompare(claveRegistro(a)) || num(b) - num(a);
+    }
+    function canonico(r) {
+        var porNorm = {};
+        Object.keys(r).forEach(function (k) { porNorm[norm(k)] = r[k]; });
+        FIJAS.concat(items, itemsOp).forEach(function (c) { if (porNorm[norm(c)] !== undefined) r[c] = porNorm[norm(c)]; });
+        r.TIPO = esOp(r) ? OP : EJ;
+        // Un Apps Script sin actualizar guarda el lote cerrado como SIN NOVEDAD
+        if (r.ESTADO === 'SIN NOVEDAD' && esCerrado(r)) r.ESTADO = 'CERRADO';
+        return r;
+    }
+
+    // ---------- Estado (el servidor lo recalcula al guardar) ----------
+    var NO_REALIZADO = 'LOTE NO REALIZADO', CERRADO = 'LOTE CERRADO';
+    function itemsEnNo(r) { return itemsDe(r).filter(function (i) { return valorItem(r[i]) === 'NO'; }); }
+    // Ítems que estuvieron en NO y ya se corrigieron (los anota el Apps Script al subsanar)
+    function itemsSubsanados(r) {
+        var lista = String(r['ÍTEMS SUBSANADOS'] || '').split('|').map(norm);
+        return itemsDe(r).filter(function (i) { return lista.indexOf(norm(i)) !== -1 && valorItem(r[i]) !== 'NO'; });
+    }
+    // Visita al lote ejecutado: es la que cuenta para la pre-ruta, la frecuencia y el estado del lote en el mapa
+    function deLote(r) { return !esOp(r); }
+    function esCerrado(r) { return norm(r['OBSERVACIONES NOVEDADES']).indexOf(CERRADO) !== -1; }
+    // Lote cerrado: no se pudo entrar a revisarlo (ítems en N/A); no cuenta como sin novedad
+    function calcularEstado(r, anterior) {
+        if (itemsEnNo(r).length) return 'PENDIENTE';
+        if (esCerrado(r)) return 'CERRADO';
+        return (anterior === 'PENDIENTE' || anterior === 'SUBSANADO') ? 'SUBSANADO' : 'SIN NOVEDAD';
+    }
+    function badge(estado) { return estado ? '<span class="estado e-' + estado.replace(/ /g, '-') + '">' + esc(estado) + '</span>' : ''; }
+
+    // ---------- Listado ----------
+    function cargar() {
+        if (!CFG.url) {
+            aviso('<b>Falta conectar la hoja de Google.</b> Siga los pasos de <code>LEEME_SUBSANACIONES.txt</code>: cree la hoja, pegue <code>apps_script/Code.gs</code>, ' +
+                'publíquelo como aplicación web y copie la URL en <code>js/subsanaciones_config.js</code>.', true);
+            $('tabla').innerHTML = '<div class="vacio">Sin conexión a la base de datos.</div>';
+            $('btn-nuevo').disabled = true;
+            return;
+        }
+        // Google tarda varios segundos en responder: mientras tanto se muestra lo último guardado en este celular
+        var copia = !cargado && leerCache();
+        if (copia) aplicarDatos(copia, true);
+        else if (!cargado) $('tabla').innerHTML = '<div class="cargando">Cargando…</div>';
+        var btn = $('btn-recargar');
+        btn.disabled = true;
+        btn.textContent = '↻ Actualizando…';
+        var inicio = Date.now();
+        leer().then(function (d) {
+            aviso('');
+            // Mientras se leía se cambió una pre-ruta aquí (p. ej. se quitó un lote): manda lo de este celular
+            if (ultimoCambioRuta >= inicio) delete d.rutas;
+            else ultimasRutas = d.rutas || null;
+            aplicarDatos(d, false);
+            guardarCache();
+        }).catch(function (err) {
+            if (cargado) return aviso('Se muestra lo guardado en este celular' + (copia && copia.t ? ' (' + new Date(copia.t).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) + ')' : '') +
+                '. No se pudo actualizar: ' + esc(err.message) + '. Pulse "↻ Actualizar" para reintentar.');
+            aviso('<b>No se pudo leer la hoja:</b> ' + esc(err.message) + '. Revise que la aplicación web esté publicada con acceso "Cualquier usuario".', true);
+            $('tabla').innerHTML = '<div class="vacio">No hay datos.</div>';
+        }).then(function () { btn.disabled = false; btn.textContent = '↻ Actualizar'; });
+    }
+    function aplicarDatos(d, desdeCache) {
+        items = d.items || [];
+        columnas = d.columnas || [];
+        // Un Apps Script sin actualizar no trae la hoja "Operación": ese tipo de visita queda deshabilitado
+        hayOperacion = !!d.itemsOperacion;
+        itemsOp = d.itemsOperacion || [];
+        columnasOp = d.columnasOperacion || [];
+        if (d.recordatorios) recordatorios = d.recordatorios;
+        registros = (d.registros || []).map(canonico);
+        ordenarRegistros();
+        llenarSelect('f-zona', 'ZONA', 'Zona: todas');
+        llenarSelect('f-cuadrilla', 'CUADRILLA', 'Cuadrilla: todas');
+        if (d.rutas) rutasDeHoja(d.rutas, desdeCache);
+        // Con la copia del celular la pre-ruta puede estar vieja: no se toca la hoja hasta que llegue la de verdad
+        if (!desdeCache) rutasAlDia = true;
+        cargado = true;
+        pintar();
+        abrirDesdeUrl(!desdeCache);
+        if (alCargar) { var f = alCargar; alCargar = null; f(); }
+    }
+    // Copia de la hoja en este celular (también la usa el mapa rápido para "Ver detalles" al instante)
+    var CACHE = 'subsanaciones_cache', ultimasRutas = null;
+    function leerCache() {
+        try { var c = JSON.parse(localStorage.getItem(CACHE)); return c && c.registros ? c : null; } catch (e) { return null; }
+    }
+    function guardarCache() {
+        try {
+            localStorage.setItem(CACHE, JSON.stringify({ t: Date.now(), items: items, columnas: columnas,
+                itemsOperacion: hayOperacion ? itemsOp : undefined, columnasOperacion: columnasOp, recordatorios: recordatorios,
+                registros: registros, rutas: ultimasRutas || (leerCache() || {}).rutas || null }));
+        } catch (e) {}
+    }
+
+    function llenarSelect(id, campo, todos) {
+        var sel = $(id), actual = sel.value;
+        var valores = registros.map(function (r) { return String(r[campo] || '').trim(); }).filter(Boolean)
+            .filter(function (z, i, a) { return a.indexOf(z) === i; }).sort(function (a, b) { return a.localeCompare(b, 'es', { numeric: true }); });
+        // "Zona 2" / "Cuadrilla 4": en el celular el selector solo muestra el texto elegido
+        var pre = campo === 'ZONA' ? 'Zona ' : campo === 'CUADRILLA' ? 'Cuadrilla ' : '';
+        sel.innerHTML = '<option value="">' + todos + '</option>' + valores.map(function (z) { return '<option value="' + esc(z) + '">' + esc(/^\d+$/.test(z) ? pre + z : z) + '</option>'; }).join('');
+        sel.value = actual;
+    }
+
+    function filtrados() {
+        var texto = norm($('f-texto').value), est = $('f-estado').value, zona = $('f-zona').value, cuad = $('f-cuadrilla').value, tipo = $('f-tipo').value;
+        return registros.filter(function (r) {
+            if (tipo && r.TIPO !== tipo) return false;
+            if (zona && String(r.ZONA).trim() !== zona) return false;
+            if (cuad && String(r.CUADRILLA).trim() !== cuad) return false;
+            if (est && r.ESTADO !== est) return false;
+            if (!texto) return true;
+            return ['ID', 'MICRORRUTA', 'LOTE', 'INTERVENTOR', 'OBSERVACIONES NOVEDADES', 'OBSERVACIÓN SUBSANACIÓN']
+                .some(function (c) { return norm(r[c]).indexOf(texto) !== -1; });
+        });
+    }
+
+    function pintar() {
+        pintarRutas();
+        var cuenta = { '': registros.length, PENDIENTE: 0, SUBSANADO: 0, 'SIN NOVEDAD': 0 };
+        registros.forEach(function (r) { if (cuenta[r.ESTADO] != null) cuenta[r.ESTADO]++; });
+        var est = $('f-estado').value;
+        $('resumen').innerHTML = [['', 'Visitas'], ['PENDIENTE', 'Pendientes de subsanar'], ['SUBSANADO', 'Subsanadas'], ['SIN NOVEDAD', 'Sin novedad']].map(function (t) {
+            return '<div class="tarjeta' + (est === t[0] ? ' activa' : '') + '" data-estado="' + t[0] + '"><div class="num">' + cuenta[t[0]] + '</div><div class="tit">' + t[1] + '</div></div>';
+        }).join('');
+
+        var lista = filtrados().sort(porRegistro);
+        if (!lista.length) {
+            $('tabla').innerHTML = '<div class="vacio">' + (registros.length ? 'Ningún registro coincide con los filtros.' : 'Aún no hay visitas. Use "+ Nueva visita" o pegue su Excel en la hoja de Drive.') + '</div>';
+            return;
+        }
+        $('tabla').innerHTML = '<div class="movil">' + lista.map(tarjetaMovil).join('') + '</div>' +
+            '<table class="escritorio"><thead><tr><th>Lote / Microrruta</th><th>Visita</th><th>Ítems en NO</th><th>Estado</th><th>Observaciones</th><th></th></tr></thead><tbody>' +
+            lista.map(function (r) {
+                var enNo = itemsEnNo(r), d = r.ESTADO === 'PENDIENTE' ? dias(r['FECHA DE LA VISITA']) : null;
+                return '<tr>' +
+                    '<td data-label="Lote / Microrruta"><span class="lote-tit">' + (r.LOTE ? 'Lote ' + esc(r.LOTE) : esc(r.MICRORRUTA || '—')) + '</span>' +
+                        (esOp(r) ? '<span class="tag-op">🦺 Operación</span>' : '') +
+                        '<div class="sub">' + [r.LOTE ? r.MICRORRUTA : '', r.ZONA ? 'Zona ' + r.ZONA : '', r.CUADRILLA ? 'Cuadrilla ' + r.CUADRILLA : ''].filter(Boolean).map(esc).join(' · ') + '</div></td>' +
+                    '<td data-label="Visita">' + esc(r['FECHA DE LA VISITA'] || '—') + '<div class="sub">' + esc(r.INTERVENTOR || '') +
+                        (r['FECHA DE EJECUCIÓN'] ? ' · Ejecución ' + esc(r['FECHA DE EJECUCIÓN']) : '') + '</div></td>' +
+                    '<td data-label="Ítems en NO">' + (enNo.length ? enNo.map(function (i) { return '<span class="chip">' + esc(i) + '</span>'; }).join('') : '<span class="sub">Ninguno</span>') + '</td>' +
+                    '<td data-label="Estado">' + badge(r.ESTADO) +
+                        (d != null ? '<div class="sub">' + d + ' día' + (d === 1 ? '' : 's') + ' desde la visita</div>' : '') +
+                        (r.ESTADO === 'SUBSANADO' && r['FECHA SUBSANACIÓN'] ? '<div class="sub">' + esc(r['FECHA SUBSANACIÓN']) + '</div>' : '') + '</td>' +
+                    '<td data-label="Observaciones">' + esc(r['OBSERVACIONES NOVEDADES'] || '') +
+                        (r['OBSERVACIÓN SUBSANACIÓN'] ? '<div class="sub">Subsanación: ' + esc(r['OBSERVACIÓN SUBSANACIÓN']) + '</div>' : '') + '</td>' +
+                    '<td class="acciones"><button type="button" class="secundario pequeno" data-ver="' + esc(r.ID) + '" aria-expanded="' + !!abiertos[r.ID] + '">' +
+                        (abiertos[r.ID] ? 'Ocultar ▴' : 'Ver detalles ▾') + '</button> ' +
+                        '<button type="button" class="secundario pequeno" data-editar="' + esc(r.ID) + '">Editar</button></td>' +
+                    '</tr>' +
+                    '<tr class="fila-detalle"' + (abiertos[r.ID] ? '' : ' hidden') + '><td colspan="6">' + detalle(r, false) + '</td></tr>';
+            }).join('') + '</tbody></table>';
+    }
+
+    function tarjetaMovil(r) {
+        var enNo = itemsEnNo(r), d = r.ESTADO === 'PENDIENTE' ? dias(r['FECHA DE LA VISITA']) : null;
+        return '<details class="visita"' + (abiertos[r.ID] ? ' open' : '') + ' data-id="' + esc(r.ID) + '"><summary>' +
+            '<span class="mr">' + (r.LOTE ? 'Lote ' + esc(r.LOTE) + '<span class="cod">' + esc(r.MICRORRUTA || '') + '</span>' : esc(r.MICRORRUTA || '—')) + '</span>' + badge(r.ESTADO) +
+            '<span class="linea">' + (esOp(r) ? '<span class="tag-op">🦺 Operación</span> ' : '') + esc(r['FECHA DE LA VISITA'] || '—') +
+                (enNo.length ? ' · <span class="alerta">' + enNo.length + ' en NO</span>' : '') +
+                (d != null ? ' · <span class="alerta">' + d + ' d</span>' : '') + '</span>' +
+            '<span class="ver"><span class="mas">Ver detalles</span><span class="menos">Ocultar</span></span>' +
+            '</summary>' + detalle(r, true) + '</details>';
+    }
+
+    // Ficha completa de la visita (la usan la lista del celular y la fila desplegable de la tabla)
+    function detalle(r, conEditar) {
+        var enNo = itemsEnNo(r), d = r.ESTADO === 'PENDIENTE' ? dias(r['FECHA DE LA VISITA']) : null;
+        var dato = function (tit, html, ancho) { return html ? '<div' + (ancho ? ' class="ancho"' : '') + '><dt>' + tit + '</dt><dd>' + html + '</dd></div>' : ''; };
+        return '<div class="detalle"><dl>' +
+            dato('Mapa', r.MICRORRUTA || r.LOTE ? '<a class="enlace-mapa" href="' + esc(urlMapa(r.MICRORRUTA, r.LOTE)) + '">Ver en mapa ›</a>' : '') +
+            dato('Zona', esc(r.ZONA)) + dato('Cuadrilla', esc(r.CUADRILLA)) +
+            dato('Interventor', esc(r.INTERVENTOR)) + dato('Ejecución', esc(r['FECHA DE EJECUCIÓN'])) +
+            dato('Área m2', esc(r['ÁREA M2'])) +
+            dato('Días desde la visita', d != null ? d + ' día' + (d === 1 ? '' : 's') : '') +
+            dato('Ítems en NO', enNo.length ? enNo.map(function (i) { return '<span class="chip">' + esc(i) + '</span>'; }).join('') : 'Ninguno', true) +
+            dato('Observaciones', esc(r['OBSERVACIONES NOVEDADES']), true) +
+            dato('Fecha subsanación', esc(r['FECHA SUBSANACIÓN'])) + dato('Registrado por', esc(r['REGISTRADO POR'])) +
+            dato('Observación subsanación', esc(r['OBSERVACIÓN SUBSANACIÓN']), true) +
+            dato('Evidencia', /^https?:\/\//i.test(r.EVIDENCIA || '') ? '<a href="' + esc(r.EVIDENCIA) + '" target="_blank" rel="noopener">Abrir fotos</a>' : esc(r.EVIDENCIA), true) +
+            '</dl>' + (r.ESTADO === 'PENDIENTE' ? '<button type="button" class="subsanar' + (conEditar ? '' : ' pequeno') + '" data-subsanar="' + esc(r.ID) + '">✓ Marcar subsanado</button>' : '') +
+            (conEditar ? '<div class="fila-btn"><button type="button" class="primario editar" data-editar="' + esc(r.ID) + '">Editar</button>' +
+                '<button type="button" class="peligro" data-eliminar="' + esc(r.ID) + '">🗑 Eliminar</button></div>' : '') +
+            (enNo.length ? '<button type="button" class="wa' + (conEditar ? ' wa-btn' : ' pequeno') + '" data-wa="' + esc(r.ID) + '">Resumen WhatsApp</button>' : '') +
+            (conEditar ? '' : ' <button type="button" class="peligro pequeno" data-eliminar="' + esc(r.ID) + '" style="margin-top:8px">🗑 Eliminar</button>') + '</div>';
+    }
+
+    // Pide confirmación y borra la fila de la hoja. Devuelve true si se eliminó.
+    function eliminar(id) {
+        var r = registros.find(function (x) { return x.ID === id; });
+        if (!r) return Promise.resolve(false);
+        var nombre = r.LOTE ? 'del lote ' + r.LOTE : 'de ' + (r.MICRORRUTA || id);
+        if (!confirm('¿Eliminar la visita ' + nombre + ' del ' + (r['FECHA DE LA VISITA'] || '—') + ' (' + id + ')?\nSe borrará la fila de la hoja.')) return Promise.resolve(false);
+        return enviar('eliminar', { id: id }).then(function () {
+            registros = registros.filter(function (x) { return x.ID !== id; });
+            guardarCache();
+            delete abiertos[id];
+            pintar();
+            toast('Eliminado ' + id);
+            return true;
+        });
+    }
+
+    // ---------- Visita reciente según la frecuencia (Mensual = 30 días, Quincenal = 15) ----------
+    var PERIODO = { MENSUAL: 30, QUINCENAL: 15 };
+    function deClave(k) { return new Date(k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8)); }
+    // Última visita del lote en o antes de la fecha ref (aaaa-mm-dd), sin contar la que se está editando
+    function visitaReciente(mr, lote, excluir, ref) {
+        lote = lote && lote !== 'NA' ? String(lote).trim() : '';
+        mr = String(mr || '').trim().toUpperCase();
+        if (!lote && !mr) return null;
+        var kRef = String(ref || hoy()).replace(/-/g, '');
+        var u = registros.find(function (r) {
+            if (r.ID === excluir || !deLote(r)) return false;
+            var mismo = lote ? String(r.LOTE || '').trim() === lote : String(r.MICRORRUTA || '').trim().toUpperCase() === mr;
+            var k = claveFecha(r['FECHA DE LA VISITA']);
+            return mismo && k && k <= kRef;
+        });
+        if (!u) return null;
+        var p = LOTES[mr] || LOTES[mrPorLote[lote]] || {}, periodo = PERIODO[norm(p.frec)] || 0;
+        var k = claveFecha(u['FECHA DE LA VISITA']), d = Math.round((deClave(kRef) - deClave(k)) / 864e5);
+        var toca = periodo ? new Date(deClave(k).getTime() + periodo * 864e5).toISOString().slice(0, 10) : '';
+        return { r: u, d: d, frec: p.frec || '', periodo: periodo, toca: toca, reciente: periodo ? d < periodo : d < 15 };
+    }
+    function textoDias(d) { return d === 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días'; }
+
+    // ---------- Resumen para WhatsApp ----------
+    function frase(s) { s = String(s || '').trim().toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); }
+    function textoWhatsapp(r) {
+        var h = new Date().getHours();
+        var saludo = h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+        var cuad = String(r.CUADRILLA || '').trim();
+        if (/^\d+$/.test(cuad)) cuad = 'C' + cuad;
+        var obs = String(r['OBSERVACIONES NOVEDADES'] || '').trim();
+        // Lote no realizado: no se listan todos los ítems, basta con decirlo
+        var lineas = norm(obs).indexOf(NO_REALIZADO) !== -1 ? [] : itemsEnNo(r).map(function (i) { return '- ' + frase(i).replace(/\.?$/, '.'); });
+        if (obs && norm(obs) !== 'SIN NOVEDAD') lineas.push('- ' + frase(obs).replace(/\.?$/, '.'));
+        return saludo + '\n\n' +
+            'Novedad' + (esOp(r) ? ' en operación' : '') + (cuad ? ' ' + cuad : '') + '\n\n' +
+            (r.MICRORRUTA || '') + (r.LOTE ? ' (' + r.LOTE + ')' : '') + '\n' +
+            lineas.join('\n');
+    }
+    function actualizarEnlaceWa() { $('wa-abrir').href = 'https://wa.me/?text=' + encodeURIComponent($('wa-texto').value); }
+    function mostrarWhatsapp(r) {
+        $('wa-texto').value = textoWhatsapp(r);
+        actualizarEnlaceWa();
+        $('dlg-wa').showModal();
+    }
+    $('wa-texto').addEventListener('input', actualizarEnlaceWa);
+    $('wa-cerrar').onclick = function () { $('dlg-wa').close(); };
+    $('wa-copiar').onclick = function () {
+        var t = $('wa-texto');
+        var copiado = function () { toast('Resumen copiado. Péguelo en WhatsApp.'); };
+        var aMano = function () { t.select(); try { document.execCommand('copy'); copiado(); } catch (e) { toast('Seleccione el texto y cópielo manualmente.'); } };
+        if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(t.value).then(copiado, aMano); else aMano();
+    };
+
+    // ---------- Formulario ----------
+    function campos() { return form.querySelectorAll('[data-campo]'); }
+    function datosFormulario() {
+        var r = {};
+        campos().forEach(function (el) { r[el.dataset.campo] = FECHAS.indexOf(el.dataset.campo) !== -1 ? aTexto(el.value) : el.value.trim(); });
+        itemsForm().forEach(function (it, i) { var m = form.querySelector('input[name="item' + i + '"]:checked'); r[it] = m ? m.value : ''; });
+        // La hoja "Operación" no tiene fecha de ejecución
+        if (tipoForm === OP) delete r['FECHA DE EJECUCIÓN'];
+        r.TIPO = tipoForm;
+        return r;
+    }
+    // Cambia el formulario entre visita al lote ejecutado y durante la operación (ítems y campos distintos)
+    function aplicarTipo(tipo, r, nuevo) {
+        tipoForm = tipo === OP && hayOperacion ? OP : EJ;
+        $('tipo-' + (tipoForm === OP ? 'op' : 'ej')).checked = true;
+        $('campo-ejecucion').hidden = tipoForm === OP;
+        $('campo-visita').classList.toggle('doble', tipoForm !== OP);
+        $('campo-visita').classList.toggle('ancho', tipoForm === OP);
+        form.querySelectorAll('.solo-ej').forEach(function (b) { b.hidden = tipoForm === OP; });
+        $('dlg-recordatorios').hidden = tipoForm !== OP || !recordatorios.length;
+        $('dlg-recordatorios').innerHTML = '<b>📌 Tener en cuenta</b><ul>' + recordatorios.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+        $('items-titulo').textContent = tipoForm === OP ? 'Ítems de la operación (SI = cumple · NO = requiere subsanación)' : 'Ítems revisados (SI = cumple · NO = requiere subsanación)';
+        pintarItems(r || {}, nuevo);
+        actualizarEstadoForm();
+    }
+    document.querySelectorAll('[name="tipo-visita"]').forEach(function (el) {
+        el.addEventListener('change', function () {
+            if (el.value === OP && !hayOperacion) {
+                toast('Para registrar visitas durante la operación, actualice el Apps Script (ver LEEME_SUBSANACIONES.txt).');
+                return aplicarTipo(EJ, null, true);
+            }
+            aplicarTipo(el.value, null, true);
+        });
+    });
+    function actualizarEstadoForm() {
+        var estado = calcularEstado(datosFormulario(), editando ? editando.ESTADO : '');
+        $('dlg-estado').className = 'estado e-' + estado.replace(/ /g, '-');
+        $('dlg-estado').textContent = estado;
+        var fecha = form.querySelector('[data-campo="FECHA SUBSANACIÓN"]');
+        if (estado === 'SUBSANADO' && !fecha.value) fecha.value = hoy();
+    }
+    function pintarItems(r, nuevo) {
+        var lista = itemsForm();
+        $('items').innerHTML = lista.length ? lista.map(function (it, i) {
+            var v = nuevo ? 'SI' : valorItem(r[it]);
+            return '<div class="item"><span>' + esc(it) + '</span><span class="opciones">' +
+                [['SI', 'si'], ['NO', 'no'], ['N/A', 'na']].map(function (o) {
+                    var id = 'it' + i + o[1];
+                    return '<input type="radio" id="' + id + '" name="item' + i + '" value="' + o[0] + '"' + (v === o[0] ? ' checked' : '') + '><label class="' + o[1] + '" for="' + id + '">' + o[0] + '</label>';
+                }).join('') + '</span></div>';
+        }).join('') : '<div class="sub">No hay ítems activos en la hoja "' + (tipoForm === OP ? 'Items Operación' : 'Items') + '".</div>';
+    }
+    function mostrarDireccion() {
+        var mr = form.querySelector('[data-campo="MICRORRUTA"]').value.trim().toUpperCase(), p = LOTES[mr];
+        // target _blank: no perder lo que se lleva escrito en el formulario
+        $('dlg-direccion').innerHTML = p ? (p.d ? 'Dirección: ' + esc(p.d) + ' · ' : '') +
+            '<a class="enlace-mapa" target="_blank" rel="noopener" href="' + esc(urlMapa(mr, p.lote)) + '">Ver en mapa ›</a>' : '';
+        mostrarReciente();
+    }
+    // "Este lote fue visitado hace 8 días": compara con la frecuencia para saber si ya le toca otra visita
+    function mostrarReciente() {
+        var el = $('dlg-reciente'), val = function (c) { return form.querySelector('[data-campo="' + c + '"]').value; };
+        // El aviso de frecuencia es del lote terminado; durante la operación no aplica
+        var v = tipoForm !== OP && visitaReciente(val('MICRORRUTA'), val('LOTE'), editando ? editando.ID : null, val('FECHA DE LA VISITA'));
+        el.hidden = !v;
+        if (!v) return;
+        var u = v.r, frec = v.frec ? 'Frecuencia ' + esc(v.frec.toLowerCase()) : '';
+        var datos = esc(u['FECHA DE LA VISITA']) + ' ' + badge(u.ESTADO) + (u.INTERVENTOR ? ' · ' + esc(u.INTERVENTOR) : '');
+        el.className = 'reciente' + (v.reciente ? ' alerta' : '');
+        el.innerHTML = v.d === 0
+            ? '⚠ <b>Este lote ya tiene una visita registrada ' + (editando ? 'ese día' : 'hoy') + '</b> (' + datos + '). Revise que no la esté registrando dos veces.'
+            : v.reciente
+                ? '⚠ <b>Visitado ' + textoDias(v.d) + '</b> (' + datos + ').' + (frec ? ' ' + frec + ': le vuelve a tocar desde el ' + esc(aTexto(v.toca)) + '.' : '')
+                : 'Última visita ' + textoDias(v.d) + ' (' + datos + ').' + (frec ? ' ' + frec + ': ya le toca.' : '');
+    }
+    form.querySelector('[data-campo="FECHA DE LA VISITA"]').addEventListener('change', mostrarReciente);
+    // registros va de la visita más reciente a la más antigua
+    function ultimoValor(campo) { var r = registros.find(function (x) { return String(x[campo] || '').trim(); }); return r ? String(r[campo]).trim() : ''; }
+    // tipo: EJECUCIÓN (por defecto) u OPERACIÓN para una visita nueva; al editar manda el tipo de la visita
+    function abrir(r, contexto, tipo) {
+        desdeRuta = contexto || null;
+        $('dlg-contexto').innerHTML = contexto ? contexto.html : '';
+        $('dlg-contexto').hidden = !contexto;
+        editando = r && r.ID ? r : null;
+        r = r || {};
+        $('dlg-titulo').textContent = editando ? 'Editar ' + editando.ID : 'Nueva visita';
+        $('btn-eliminar').hidden = !editando;
+        campos().forEach(function (el) {
+            var v = r[el.dataset.campo] || '';
+            el.value = FECHAS.indexOf(el.dataset.campo) !== -1 ? aInput(v) : v;
+        });
+        if (!editando) {
+            if (!r['FECHA DE LA VISITA']) form.querySelector('[data-campo="FECHA DE LA VISITA"]').value = hoy();
+            try {
+                form.querySelector('[data-campo="REGISTRADO POR"]').value = localStorage.getItem('subsanaciones_usuario') || ultimoValor('REGISTRADO POR');
+                form.querySelector('[data-campo="INTERVENTOR"]').value = localStorage.getItem('subsanaciones_interventor') || ultimoValor('INTERVENTOR');
+            } catch (e) {}
+        }
+        // El tipo no se cambia al editar: cada tipo vive en su propia hoja
+        $('tipo-visita').hidden = !!editando;
+        aplicarTipo(editando ? (esOp(editando) ? OP : EJ) : tipo || r.TIPO || EJ, r, !editando);
+        if (editando && esOp(editando)) $('dlg-titulo').textContent = 'Editar ' + editando.ID + ' · operación';
+        mostrarDireccion();
+        actualizarLimpiar();
+        if (!dlg.open) dlg.showModal();
+        dlg.scrollTop = 0; // el celular recuerda dónde quedó la ventana anterior
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    }
+    // Abre la visita con los ítems en NO pasados a SI y la fecha de hoy: al guardar queda SUBSANADO
+    function subsanar(r) {
+        var enNo = itemsEnNo(r);
+        abrir(r, { html: '✓ Subsanando <b>' + esc(r.MICRORRUTA || '') + (r.LOTE ? ' · Lote ' + esc(r.LOTE) : '') + '</b><br>' +
+            'Se marcaron en SI: ' + enNo.map(esc).join(', ') + '. Revise, agregue la observación y guarde.<br>' +
+            '📌 <b style="font-size:13px">Adjunte la evidencia ahora:</b> la interventoría la pide al momento de subsanar, no después.' });
+        enNo.forEach(function (it) { var el = $('it' + itemsDe(r).indexOf(it) + 'si'); if (el) el.checked = true; });
+        form.querySelector('[data-campo="FECHA SUBSANACIÓN"]').value = hoy();
+        actualizarEstadoForm();
+        var obs = form.querySelector('[data-campo="OBSERVACIÓN SUBSANACIÓN"]');
+        setTimeout(function () { obs.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+    }
+    function ocupado(si) { ['btn-guardar', 'btn-eliminar', 'btn-cancelar'].forEach(function (id) { $(id).disabled = si; }); }
+
+    form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var r = datosFormulario();
+        if (!r.MICRORRUTA && !r.LOTE) { toast('Indique la microrruta o el lote.'); return; }
+        var sinMarcar = itemsForm().filter(function (it) { return !r[it]; });
+        if (sinMarcar.length) { toast('Falta marcar: ' + sinMarcar.join(', ')); return; }
+        try {
+            localStorage.setItem('subsanaciones_usuario', r['REGISTRADO POR']);
+            localStorage.setItem('subsanaciones_interventor', r.INTERVENTOR);
+        } catch (e) {}
+        ocupado(true);
+        var era = editando, veniaDeRuta = desdeRuta;
+        var peticion = era ? enviar('actualizar', { id: era.ID, registro: r }) : enviar('crear', { registro: r, tipo: tipoForm });
+        peticion.then(function (d) {
+            var nuevo = canonico(d.registro);
+            var i = registros.findIndex(function (x) { return x.ID === nuevo.ID; });
+            if (i === -1) registros.unshift(nuevo); else registros[i] = nuevo;
+            ordenarRegistros();
+            guardarCache();
+            dlg.close();
+            llenarSelect('f-zona', 'ZONA', 'Zona: todas');
+            llenarSelect('f-cuadrilla', 'CUADRILLA', 'Cuadrilla: todas');
+            pintar();
+            toast((era ? 'Actualizado ' : 'Guardado ') + nuevo.ID + ' · ' + nuevo.ESTADO);
+            if (veniaDeRuta && !era) {
+                var sig = $('ruta').querySelectorAll('.ruta-card')[veniaDeRuta.ri];
+                sig = sig && (sig.querySelector('.parada.siguiente') || sig);
+                if (sig) setTimeout(function () { sig.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+            }
+            if (!era && itemsEnNo(nuevo).length) mostrarWhatsapp(nuevo);
+        }).catch(function (err) { toast('No se guardó: ' + err.message); })
+          .then(function () { ocupado(false); });
+    });
+
+    $('btn-eliminar').onclick = function () {
+        if (!editando) return;
+        ocupado(true);
+        eliminar(editando.ID).then(function (ok) { if (ok) dlg.close(); })
+            .catch(function (err) { toast('No se eliminó: ' + err.message); })
+            .then(function () { ocupado(false); });
+    };
+    $('btn-cancelar').onclick = $('dlg-cerrar').onclick = function () { dlg.close(); };
+    $('todo-si').onclick = function () {
+        itemsForm().forEach(function (it, i) { var el = $('it' + i + 'si'); if (el) el.checked = true; });
+        actualizarEstadoForm();
+    };
+    // Marca todos los ítems con un valor y pone el motivo al inicio de la observación (cambia uno por el otro si ya estaba)
+    function marcarLote(valor, motivo) {
+        itemsForm().forEach(function (it, i) { var el = $('it' + i + valor); if (el) el.checked = true; });
+        var obs = form.querySelector('[data-campo="OBSERVACIONES NOVEDADES"]');
+        var resto = obs.value.trim().replace(/^LOTE (NO REALIZADO|CERRADO)\.?\s*/i, '');
+        obs.value = motivo + (resto && norm(resto) !== 'SIN NOVEDAD' ? '. ' + resto : '');
+        actualizarEstadoForm();
+        obs.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    // La cuadrilla no ejecutó el lote: todo en NO y la observación lo dice (queda PENDIENTE)
+    $('no-realizado').onclick = function () { marcarLote('no', NO_REALIZADO); };
+    // No se pudo entrar al lote: todo en N/A y queda CERRADO (cuenta como revisado en la pre-ruta)
+    $('lote-cerrado').onclick = function () { marcarLote('na', CERRADO); };
+    $('items').addEventListener('change', actualizarEstadoForm);
+    form.querySelector('[data-campo="OBSERVACIONES NOVEDADES"]').addEventListener('input', actualizarEstadoForm);
+
+    // Autocompletar con la programación de microrrutas (data/direcciones_lotes.js)
+    var mrPorLote = {};
+    Object.keys(LOTES).forEach(function (mr) { if (LOTES[mr].lote && !mrPorLote[LOTES[mr].lote]) mrPorLote[LOTES[mr].lote] = mr; });
+    // Índice para el buscador: microrruta, lote, cuadrilla y dirección ya normalizados
+    var indice = Object.keys(LOTES).sort().map(function (mr) {
+        var p = LOTES[mr], lote = p.lote && p.lote !== 'NA' ? String(p.lote) : '';
+        return { mr: mr, lote: lote, cuad: p.cuad || '', d: p.d || '', nmr: norm(mr), nd: norm(p.d) };
+    });
+    function buscar(q, modo) {
+        q = norm(q);
+        if (!q) return [];
+        var qmr = q.replace(/\s+/g, ''), res = [];
+        indice.forEach(function (x) {
+            var p = -1;
+            if (x.nmr === qmr || x.lote === q) p = 0;
+            else if (x.lote && x.lote.indexOf(q) === 0) p = 1;
+            else if (modo === 'mr' && x.nmr.indexOf(qmr) === 0) p = 1;
+            else if (modo === 'mr' && x.nmr.indexOf(qmr) !== -1) p = 2;
+            else if (modo === 'mr' && q.length >= 3 && x.nd.indexOf(q) !== -1) p = 3;
+            if (p !== -1) res.push({ x: x, p: p });
+        });
+        res.sort(function (a, b) { return a.p - b.p || a.x.mr.localeCompare(b.x.mr); });
+        return res.slice(0, 40).map(function (r) { return r.x; });
+    }
+    function resaltar(texto, q) {
+        var t = esc(texto), n = norm(q);
+        if (!n) return t;
+        var i = norm(texto).indexOf(n);
+        // norm() conserva la longitud salvo espacios repetidos; si no cuadra, no resalta
+        return i === -1 || norm(texto).length !== String(texto).length ? t : esc(texto.slice(0, i)) + '<mark>' + esc(texto.slice(i, i + n.length)) + '</mark>' + esc(texto.slice(i + n.length));
+    }
+    var caja = document.createElement('div');
+    caja.className = 'sugerencias';
+    caja.hidden = true;
+    var activo = null, marcada = -1;
+    function cerrarSugerencias() { caja.hidden = true; marcada = -1; }
+    function mostrarSugerencias(input) {
+        activo = input;
+        var q = input.value.trim(), lista = buscar(q, input.dataset.buscar);
+        input.closest('.buscador').appendChild(caja);
+        if (!q) return cerrarSugerencias();
+        marcada = -1;
+        // Coordenadas (6.2751N 75.5737W): el mapa busca el lote que contiene ese punto
+        var c = input.id === 'ir-mapa' && window.leerCoordenadas(q);
+        if (c) {
+            caja.innerHTML = '<button type="button" data-ll="' + c.lat + ',' + c.lng + '"><span class="s-ir">Ver en mapa ›</span><span class="s-mr">📍 Ubicar el lote en ' +
+                c.lat.toFixed(5) + ', ' + c.lng.toFixed(5) + '</span></button>';
+            caja.hidden = false;
+            return;
+        }
+        caja.innerHTML = lista.length ? lista.map(function (x) {
+            return '<button type="button" data-mr="' + esc(x.mr) + '" data-lote="' + esc(x.lote) + '">' +
+                (input.id === 'ir-mapa' ? '<span class="s-ir">Ver en mapa ›</span>' : '') + '<span class="s-mr">' + resaltar(x.mr, q) +
+                '<small>' + (x.lote ? 'Lote ' + resaltar(x.lote, q) : 'Sin lote') + (x.cuad ? ' · C' + esc(x.cuad) : '') + '</small></span>' +
+                (x.d ? '<span class="s-dir">' + resaltar(x.d, q) + '</span>' : '') + '</button>';
+        }).join('') : '<div class="s-vacio">' + (input.id === 'ir-mapa' ? 'Sin coincidencias. Pulse Ir/Enter para buscarlo igual en el mapa.' : 'Sin coincidencias. Puede escribirla igual y guardar.') + '</div>';
+        caja.hidden = false;
+        caja.scrollTop = 0;
+    }
+    // Un lote que no está dibujado con su número en la capa (p. ej. 287) se busca por su microrruta
+    function enMapaPorLote(lote) { return lote && lote !== 'NA' && !!CENTROS[lote]; }
+    function urlMapa(mr, lote) { return 'mapa_rapido.html?' + (enMapaPorLote(lote) || !mr ? 'lote=' + encodeURIComponent(lote) : 'mr=' + encodeURIComponent(mr)); }
+    function elegir(mr, lote) {
+        if (activo && activo.id === 'ir-mapa') { location.href = urlMapa(mr, lote); return; }
+        var mrEl = form.querySelector('[data-campo="MICRORRUTA"]');
+        mrEl.value = mr;
+        completar(mr);
+        cerrarSugerencias();
+        actualizarLimpiar();
+        if (activo) activo.blur(); // cierra el teclado del celular
+    }
+    function actualizarLimpiar() { form.querySelector('[data-limpiar]').hidden = !form.querySelector('[data-campo="MICRORRUTA"]').value; }
+    // pointerdown + preventDefault: el toque no le quita el foco al campo antes de elegir
+    caja.addEventListener('pointerdown', function (ev) { ev.preventDefault(); });
+    caja.addEventListener('click', function (ev) {
+        var ll = ev.target.closest('[data-ll]');
+        if (ll) { location.href = 'mapa_rapido.html?ll=' + ll.dataset.ll; return; }
+        var b = ev.target.closest('[data-mr]'); if (b) elegir(b.dataset.mr, b.dataset.lote);
+    });
+    document.querySelectorAll('[data-buscar]').forEach(function (input) {
+        input.addEventListener('input', function () { mostrarSugerencias(input); actualizarLimpiar(); });
+        input.addEventListener('focus', function () { if (input.value.trim()) mostrarSugerencias(input); });
+        input.addEventListener('blur', function () { setTimeout(cerrarSugerencias, 150); });
+        input.addEventListener('keydown', function (ev) {
+            var bs = caja.hidden ? [] : caja.querySelectorAll('[data-mr]');
+            if (ev.key === 'Escape' && !caja.hidden) { ev.preventDefault(); ev.stopPropagation(); return cerrarSugerencias(); }
+            var c = ev.key === 'Enter' && input.id === 'ir-mapa' && window.leerCoordenadas(input.value);
+            if (c) { ev.preventDefault(); location.href = 'mapa_rapido.html?ll=' + c.lat + ',' + c.lng; return; }
+            if (!bs.length) {
+                // Sin sugerencias: desde "Ir al mapa" igual se busca lo escrito (número = lote, texto = microrruta)
+                var v = input.value.trim();
+                if (ev.key === 'Enter' && input.id === 'ir-mapa' && v) location.href = /^\d+$/.test(v) ? urlMapa('', v) : urlMapa(v.toUpperCase().replace(/\s+/g, ''), '');
+                return;
+            }
+            if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+                ev.preventDefault();
+                marcada = (marcada + (ev.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length;
+                bs.forEach(function (b, i) { b.classList.toggle('activa', i === marcada); });
+                bs[marcada].scrollIntoView({ block: 'nearest' });
+            } else if (ev.key === 'Enter') {
+                ev.preventDefault(); // no enviar el formulario al buscar
+                var b = bs[marcada === -1 ? 0 : marcada];
+                elegir(b.dataset.mr, b.dataset.lote);
+            }
+        });
+    });
+    form.querySelector('[data-limpiar]').onclick = function () {
+        ['MICRORRUTA', 'LOTE', 'ÁREA M2', 'ZONA', 'CUADRILLA'].forEach(function (c) { form.querySelector('[data-campo="' + c + '"]').value = ''; });
+        mostrarDireccion();
+        actualizarLimpiar();
+        form.querySelector('[data-campo="MICRORRUTA"]').focus();
+    };
+    dlg.addEventListener('close', cerrarSugerencias);
+
+    function completar(mr) {
+        var p = LOTES[mr];
+        if (!p) return;
+        var poner = function (c, v) { var el = form.querySelector('[data-campo="' + c + '"]'); if (v != null && v !== '') el.value = v; };
+        poner('MICRORRUTA', mr);
+        poner('LOTE', p.lote);
+        poner('CUADRILLA', p.cuad);
+        if (p.area) poner('ÁREA M2', Number(p.area).toLocaleString('es-CO'));
+        var z = mr.match(/^Z(\d+)/i);
+        if (z) poner('ZONA', z[1]);
+        mostrarDireccion();
+    }
+    form.querySelector('[data-campo="MICRORRUTA"]').addEventListener('change', function () { completar(this.value.trim().toUpperCase()); });
+    form.querySelector('[data-campo="LOTE"]').addEventListener('change', function () {
+        var mrEl = form.querySelector('[data-campo="MICRORRUTA"]');
+        if (!mrEl.value && mrPorLote[this.value.trim()]) completar(mrPorLote[this.value.trim()]);
+        else mostrarReciente();
+    });
+
+    // Desde el mapa: subsanaciones.html?mr=Z2CC0067&lote=264
+    var desdeUrlHecho = false;
+    // final = datos ya leídos de la hoja (no solo los guardados en el celular)
+    function abrirDesdeUrl(final) {
+        if (desdeUrlHecho) return;
+        var q = new URLSearchParams(location.search), mr = q.get('mr') || '', lote = q.get('lote') || '', ver = q.get('ver') || '', sub = q.get('subsanar') || '';
+        var buscada = function (id) { return registros.filter(function (r) { return r.ID === id; })[0]; };
+        // Visita que aún no está en lo guardado en el celular: se espera a la hoja
+        if ((ver || sub) && !final && !buscada(ver || sub)) return;
+        desdeUrlHecho = true;
+        if (!mr && !lote && !ver && !sub) return;
+        // Se usa una sola vez: si el celular recarga la pestaña o vuelve a ella, muestra la lista y no el formulario
+        try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+        // Desde el mapa: subsanaciones.html?subsanar=SUB-00042 abre esa visita con los ítems en NO pasados a SI
+        if (sub) {
+            var rs = buscada(sub);
+            if (!rs) return toast('No se encontró la visita ' + sub + '. Puede que la hayan eliminado.');
+            if (rs.ESTADO === 'PENDIENTE') return subsanar(rs);
+            toast('La visita ' + sub + ' ya está ' + rs.ESTADO + '.');
+            ver = sub;
+        }
+        // Desde la ficha del mapa: subsanaciones.html?ver=SUB-00042 muestra esa visita con los detalles abiertos
+        if (ver) {
+            if (!registros.some(function (r) { return r.ID === ver; })) return toast('No se encontró la visita ' + ver + '. Puede que la hayan eliminado.');
+            $('f-texto').value = ver;
+            abiertos[ver] = true;
+            pintar();
+            $('tabla').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return toast('Visita ' + ver + '. Borre la búsqueda para ver todas.');
+        }
+        $('f-texto').value = mr || lote;
+        pintar();
+        // Si el lote está en los lotes a revisar, llega con los datos de esa parada (cuadrilla, fecha de ejecución)
+        var enRuta = paradaDe(mr, lote);
+        if (enRuta) registrarParada(enRuta.ri, enRuta.id);
+        else {
+            abrir({ MICRORRUTA: mr, LOTE: lote });
+            if (mr) completar(mr); else if (mrPorLote[lote]) completar(mrPorLote[lote]);
+        }
+        // Al cerrar el formulario se quita el filtro de ese lote y queda la lista completa
+        dlg.addEventListener('close', function () { if ($('f-texto').value === (mr || lote)) { $('f-texto').value = ''; pintar(); } }, { once: true });
+    }
+
+    // ---------- Pre-ruta: lotes que mandan a revisar (se guarda en este celular) ----------
+    var CENTROS = window.centrosLotes || {};
+    // Una ruta por cuadrilla: { cuad, paradas: [{ id, fecha (ejecución), creada (día), carga (aaaa-mm-ddTHH:MM:SS), encurso }] }
+    // encurso: desde cuándo la cuadrilla está trabajando en ese lote ("inicia labores en el lote ..."); aún no se revisa
+    var rutas = [], posicion = null;
+    // Orden de cada pre-ruta en este celular: 'llegada' (como llegaron los mensajes) o cercanía (por defecto)
+    var modos;
+    try { modos = JSON.parse(localStorage.getItem('subsanaciones_modos')) || {}; } catch (e) { modos = {}; }
+    function porLlegada(ruta) { return modos[ruta.cuad || ''] === 'llegada'; }
+    function guardarModos() { try { localStorage.setItem('subsanaciones_modos', JSON.stringify(modos)); } catch (e) {} }
+    function marca(d) {
+        d = d || new Date();
+        var z = function (n) { return ('0' + n).slice(-2); };
+        return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + 'T' + z(d.getHours()) + ':' + z(d.getMinutes()) + ':' + z(d.getSeconds());
+    }
+    // aaaa-mm-ddTHH:MM:SS <-> dd/mm/aaaa HH:MM:SS (así queda en la columna CARGADA / EN CURSO de la hoja)
+    function textoCarga(c) {
+        var m = String(c || '').match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}:\d{2}(?::\d{2})?))?/);
+        return m ? m[3] + '/' + m[2] + '/' + m[1] + (m[4] ? ' ' + m[4] : '') : '';
+    }
+    function cargaDeTexto(s) {
+        var m = String(s || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+        if (!m) { var a = aInput(s); return a ? a + 'T00:00:00' : ''; }
+        var z = function (n) { return ('0' + (n || 0)).slice(-2); };
+        return m[3] + '-' + z(m[2]) + '-' + z(m[1]) + 'T' + z(m[4]) + ':' + z(m[5]) + ':' + z(m[6]);
+    }
+    // "07:48" si fue hoy, "18/10 07:48" si fue otro día; nada si no se sabe la hora
+    function horaCarga(c) {
+        c = String(c || '');
+        if (c.length < 16 || c.slice(11, 16) === '00:00') return '';
+        return (c.slice(0, 10) === hoy() ? '' : c.slice(8, 10) + '/' + c.slice(5, 7) + ' ') + c.slice(11, 16);
+    }
+    function claveCarga(p) { return p.carga || (p.creada ? p.creada + 'T00:00:00' : ''); }
+    // modoHoja: el Apps Script ya tiene la pestaña "Rutas" y la pre-ruta se comparte entre celulares.
+    // Sin eso (script viejo o sin conexión) se trabaja solo con la copia de este celular.
+    var modoHoja = false;
+    function guardarRutas() { try { localStorage.setItem('subsanaciones_rutas', JSON.stringify(rutas)); } catch (e) {} }
+    // Hora del último cambio hecho aquí a una pre-ruta: una lectura de la hoja que salió antes no lo deshace
+    var ultimoCambioRuta = 0;
+    function subirRuta(ruta) {
+        if (!modoHoja) return;
+        ultimoCambioRuta = Date.now();
+        var paradas = ruta.paradas.map(function (p) {
+            return { lote: p.id, fecha: aTexto(p.fecha), cargada: textoCarga(p.carga) || aTexto(p.creada), encurso: textoCarga(p.encurso) };
+        });
+        // La copia del celular queda igual de una vez: al recargar no reaparecen los lotes quitados
+        ultimasRutas = (ultimasRutas || []).filter(function (r) { return r.cuadrilla !== ruta.cuad; }).concat(paradas.map(function (p, n) {
+            return { cuadrilla: ruta.cuad, lote: p.lote, fecha: p.fecha, orden: String(n + 1), cargada: p.cargada, encurso: p.encurso };
+        }));
+        guardarCache();
+        enviar('guardar_ruta', { cuadrilla: ruta.cuad, paradas: paradas })
+            .catch(function (err) { toast('La pre-ruta quedó en este celular pero no en la hoja: ' + err.message); });
+    }
+    // desdeCache: copia guardada en el celular mientras llega la hoja; no sube nada a la hoja
+    function rutasDeHoja(lista, desdeCache) {
+        modoHoja = true;
+        var locales = rutas;
+        // La primera vez, lo que estaba solo en este celular se sube a la hoja (una sola vez, para no revivir rutas que otro quitó)
+        var migrar = false;
+        if (!desdeCache) try { migrar = !localStorage.getItem('subsanaciones_rutas_en_hoja'); localStorage.setItem('subsanaciones_rutas_en_hoja', '1'); } catch (e) {}
+        rutas = [];
+        lista.slice().sort(function (a, b) {
+            return a.cuadrilla.localeCompare(b.cuadrilla, 'es', { numeric: true }) || (Number(a.orden) || 1e9) - (Number(b.orden) || 1e9);
+        }).forEach(function (r) {
+            var id = /^\d+$/.test(r.lote) ? String(+r.lote) : r.lote;
+            var n = { id: id, fecha: aInput(r.fecha), creada: aInput(r.cargada) || hoy(), carga: cargaDeTexto(r.cargada) };
+            if (r.encurso !== undefined) n.encurso = cargaDeTexto(r.encurso);
+            agregarParadas(r.cuadrilla, [n]);
+        });
+        // Un Apps Script sin actualizar no trae la columna EN CURSO: se usa la de este celular
+        var hojaConCurso = lista.some(function (r) { return r.encurso !== undefined; });
+        // La hoja guarda el orden pero no la marca "para después": se conserva la de este celular
+        locales.forEach(function (l) {
+            var ruta = rutas.find(function (r) { return r.cuad === l.cuad; });
+            if (ruta) l.paradas.forEach(function (p) {
+                var q = ruta.paradas.find(function (x) { return x.id === p.id; });
+                if (!q) return;
+                if (p.despues) q.despues = true;
+                if (!hojaConCurso && p.encurso) q.encurso = p.encurso;
+                // Filas viejas de la hoja solo tienen el día: se conserva la hora que sabe este celular
+                if (p.carga && p.carga.slice(0, 10) === claveCarga(q).slice(0, 10) && /T00:00:00$/.test(claveCarga(q))) q.carga = p.carga;
+            });
+        });
+        if (migrar) locales.forEach(function (l) {
+            var ruta = agregarParadas(l.cuad, l.paradas);
+            ordenar(ruta, posicion);
+            subirRuta(ruta);
+        });
+        // Lotes escritos a mano en la hoja (sin ORDEN): se ordenan por cercanía y se guarda el orden
+        var sinOrden = {};
+        lista.forEach(function (r) { if (!r.orden) sinOrden[r.cuadrilla] = true; });
+        if (!desdeCache) rutas.forEach(function (ruta) { if (sinOrden[ruta.cuad]) { ordenar(ruta, posicion); subirRuta(ruta); } });
+        guardarRutas();
+    }
+    function agregarParadas(cuad, nuevas) {
+        var ruta = rutas.find(function (r) { return r.cuad === cuad; });
+        if (!ruta) { ruta = { cuad: cuad, paradas: [] }; rutas.push(ruta); }
+        nuevas.forEach(function (n) {
+            var ya = ruta.paradas.find(function (p) { return p.id === n.id; });
+            if (ya) {
+                ya.fecha = n.fecha || ya.fecha; ya.creada = n.creada; ya.carga = n.carga || ya.carga;
+                if (n.encurso !== undefined) ya.encurso = n.encurso;
+            } else ruta.paradas.push(n);
+        });
+        // Cuadrillas en orden numérico; las sin cuadrilla al final
+        rutas.sort(function (a, b) { return (a.cuad ? 0 : 1) - (b.cuad ? 0 : 1) || a.cuad.localeCompare(b.cuad, 'es', { numeric: true }); });
+        return ruta;
+    }
+
+    // "Lotes ejecutados el 14-10-2026 por la cuadrilla #2 \n 532 \n 371" -> fecha, cuadrilla y lotes
+    // "Buenos días Cuadrilla #4 inicia labores Lote de inicio Z2cc0339" -> tipo 'curso': la cuadrilla está trabajando ahí ahora
+    // "Terminó el lote 532, pasamos al 371": lo de antes de "pasamos" ya se ejecutó, lo de después está en ejecución
+    var RE_HECHO = /ejecutad|terminad|terminamos|termin[oó]|finaliz|culmin|realizad/i;
+    var RE_CURSO = /inici|empez|empiez|comenz|comienz|arranc|en ejecuci|ejecutando|trabajando|contin[uú]|seguimos|nos encontramos|pasamos|nos dirigimos|vamos/i;
+    function parsearMensaje(texto) {
+        var t = String(texto || ''), fecha = '', cuad = '', m, lotes = [], enCurso = [];
+        m = t.match(/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4}|\d{2})\b/);
+        if (m) { fecha = (m[3].length === 2 ? '20' + m[3] : m[3]) + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2); t = t.replace(m[0], ' '); }
+        m = t.match(/cuadrilla\s*(?:n[°º.o]*\s*)?#?\s*(\d+)/i);
+        if (m) { cuad = m[1]; t = t.replace(m[0], ' '); }
+        var pc = t.search(RE_CURSO), ph = t.search(RE_HECHO);
+        // ¿El lote que está en la posición i del mensaje está en ejecución?
+        var esCurso = function (i) {
+            if (pc === -1) return false;
+            if (ph === -1) return true;
+            return ph < pc ? i > pc : i < ph;
+        };
+        var re = /\bZ\d+[A-Z]{2}\d{3,5}\b|\b\d{1,5}\b/gi;
+        while ((m = re.exec(t))) {
+            var v = m[0].toUpperCase();
+            v = /^Z/.test(v) ? (LOTES[v] && LOTES[v].lote && LOTES[v].lote !== 'NA' ? LOTES[v].lote : v) : String(+v);
+            if (lotes.indexOf(v) !== -1) continue;
+            lotes.push(v);
+            if (esCurso(m.index)) enCurso.push(v);
+        }
+        var tipo = !enCurso.length ? 'hecho' : enCurso.length === lotes.length ? 'curso' : 'mixto';
+        return { fecha: fecha, cuad: cuad, lotes: lotes, enCurso: enCurso, tipo: tipo };
+    }
+    // id = número de lote, o la microrruta cuando no tiene lote
+    function infoLote(id) {
+        var mr = LOTES[id] ? id : mrPorLote[id] || '', p = LOTES[mr] || {};
+        return { id: id, mr: mr, lote: LOTES[id] ? '' : id, cuad: p.cuad || '', d: p.d || '', c: CENTROS[id] || null };
+    }
+    // Descripción y frecuencia de la programación, y la última visita registrada de ese lote
+    function fichaLote(x) {
+        var p = LOTES[x.mr] || {}, html = '';
+        if (p.frec || p.area) html += '<br>' + (p.frec ? 'Frecuencia ' + esc(p.frec) : '') + (p.frec && p.area ? ' · ' : '') + (p.area ? esc(Number(p.area).toLocaleString('es-CO')) + ' m²' : '');
+        if (p.desc) html += '<div class="desc" data-desc title="Toque para ver completa">' + esc(p.desc) + '</div>';
+        var previas = registros.filter(function (r) {
+            if (!deLote(r)) return false;
+            return x.lote ? String(r.LOTE || '').trim() === x.lote : String(r.MICRORRUTA || '').trim().toUpperCase() === x.mr;
+        });
+        if (!previas.length) return html + '<div class="historial">Sin visitas anteriores registradas.</div>';
+        var u = previas[0], enNo = itemsEnNo(u);
+        html += '<div class="historial">Última visita: <b style="font-size:13px">' + esc(u['FECHA DE LA VISITA'] || '—') + '</b> ' + badge(u.ESTADO) +
+            (u.INTERVENTOR ? ' · ' + esc(u.INTERVENTOR) : '') + (previas.length > 1 ? ' · ' + previas.length + ' visitas en total' : '') +
+            (enNo.length ? '<br>Ítems en NO: ' + enNo.map(esc).join(', ') : '') +
+            (u['OBSERVACIONES NOVEDADES'] && norm(u['OBSERVACIONES NOVEDADES']) !== 'SIN NOVEDAD' ? '<br>Observaciones: ' + esc(u['OBSERVACIONES NOVEDADES']) : '') +
+            (u.ESTADO === 'PENDIENTE' ? '<br><button type="button" class="secundario pequeno" data-abrir-visita="' + esc(u.ID) + '">Abrir esa visita para subsanarla</button>' : '') +
+            '</div>';
+        return html;
+    }
+    $('dlg-contexto').addEventListener('click', function (ev) {
+        var d = ev.target.closest('[data-desc]');
+        if (d) return d.classList.toggle('abierta');
+        var b = ev.target.closest('[data-abrir-visita]');
+        if (b) subsanar(registros.find(function (r) { return r.ID === b.dataset.abrirVisita; }));
+    });
+    function visitaDe(p, x) {
+        // Una visita durante la operación no revisa el lote terminado: la parada sigue pendiente
+        return registros.find(function (r) {
+            if (!deLote(r)) return false;
+            var mismo = x.lote ? String(r.LOTE || '').trim() === x.lote : String(r.MICRORRUTA || '').trim().toUpperCase() === x.mr;
+            return mismo && ((p.fecha && aInput(r['FECHA DE EJECUCIÓN']) === p.fecha) || aInput(r['FECHA DE LA VISITA']) >= p.creada);
+        });
+    }
+    function metros(a, b) {
+        var r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
+        var h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.pow(Math.sin(dLon / 2), 2);
+        return 2 * 6371e3 * Math.asin(Math.sqrt(h));
+    }
+    // Distancia entre dos lotes = la de sus partes más cercanas (puntos repartidos por los lotes largos;
+    // los demás usan su centro). desde puede ser [lat, lon] (su ubicación) o un id de lote.
+    var PUNTOS = window.puntosLotes || {};
+    function puntosDe(id) { return PUNTOS[id] || (CENTROS[id] ? [CENTROS[id]] : []); }
+    function distLotes(a, b) {
+        var pa = typeof a === 'string' ? puntosDe(a) : [a], pb = typeof b === 'string' ? puntosDe(b) : [b], min = Infinity;
+        pa.forEach(function (x) { pb.forEach(function (y) { var d = metros(x, y); if (d < min) min = d; }); });
+        return min;
+    }
+    function textoDist(m) { return m < 1000 ? Math.round(m / 10) * 10 + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km'; }
+    function urlIr(c) { return 'https://www.google.com/maps/dir/?api=1&destination=' + c[0] + ',' + c[1] + '&travelmode=driving'; }
+
+    // Pendientes primero (en el recorrido más corto, o como fueron llegando si la pre-ruta está "por llegada");
+    // luego los dejados para después, los sin ubicación, los que la cuadrilla aún está ejecutando y al final los ya revisados
+    function ordenar(ruta, desde) {
+        var pend = [], despues = [], hechos = [], sinC = [], curso = [], llegada = porLlegada(ruta);
+        ruta.paradas.forEach(function (p) {
+            var x = infoLote(p.id);
+            (visitaDe(p, x) ? hechos : p.encurso ? curso : p.despues ? despues : x.c || llegada ? pend : sinC).push(p);
+        });
+        pend = llegada ? pend.slice().sort(function (a, b) { return claveCarga(a).localeCompare(claveCarga(b)); }) : recorridoCorto(pend, desde);
+        ruta.paradas = pend.concat(despues, sinC, curso, hechos);
+    }
+    // "Después": pasa la parada al final de las pendientes; "Hacer ahora": la vuelve la siguiente
+    function aplazar(ruta, id, si) {
+        var n = ruta.paradas.findIndex(function (p) { return p.id === id; });
+        if (n === -1) return;
+        var p = ruta.paradas.splice(n, 1)[0];
+        if (si) p.despues = true; else delete p.despues;
+        var pendiente = function (q) { return !visitaDe(q, infoLote(q.id)); };
+        var k = si ? ruta.paradas.reduce(function (u, q, i) { return pendiente(q) ? i + 1 : u; }, 0)
+                   : Math.max(0, ruta.paradas.findIndex(pendiente));
+        ruta.paradas.splice(k, 0, p);
+    }
+    // Vecino más cercano (probando cada lote como inicio si no hay ubicación) y luego 2-opt: deshace los cruces del recorrido
+    function recorridoCorto(ps, desde) {
+        if (ps.length < 2) return ps;
+        // Distancias calculadas una sola vez: entre lotes (D) y desde su ubicación (U)
+        var D = {}, U = {};
+        ps.forEach(function (a) {
+            D[a.id] = {};
+            ps.forEach(function (b) { D[a.id][b.id] = a === b ? 0 : (D[b.id] && D[b.id][a.id] != null ? D[b.id][a.id] : distLotes(a.id, b.id)); });
+            if (desde) U[a.id] = distLotes(desde, a.id);
+        });
+        var d = function (a, b) { return a ? D[a.id][b.id] : desde ? U[b.id] : 0; };
+        var largo = function (o) { var t = 0, a = null; o.forEach(function (p) { t += d(a, p); a = p; }); return t; };
+        var mejor = null;
+        (desde ? [null] : ps).forEach(function (ini) {
+            var resto = ps.slice(), orden = [], actual = null;
+            if (ini) { orden.push(resto.splice(resto.indexOf(ini), 1)[0]); actual = ini; }
+            while (resto.length) {
+                var k = 0;
+                resto.forEach(function (p, i) { if (d(actual, p) < d(actual, resto[k])) k = i; });
+                actual = resto[k];
+                orden.push(resto.splice(k, 1)[0]);
+            }
+            if (!mejor || largo(orden) < largo(mejor)) mejor = orden;
+        });
+        for (var mejoro = true; mejoro;) {
+            mejoro = false;
+            for (var i = 0; i < mejor.length - 1; i++) for (var k = i + 1; k < mejor.length; k++) {
+                var prueba = mejor.slice(0, i).concat(mejor.slice(i, k + 1).reverse(), mejor.slice(k + 1));
+                if (largo(prueba) < largo(mejor) - 1) { mejor = prueba; mejoro = true; }
+            }
+        }
+        return mejor;
+    }
+    // Carga lo guardado; el formato anterior (una ruta por mensaje) se junta por cuadrilla y se reordena
+    (function () {
+        var guardadas;
+        try { guardadas = JSON.parse(localStorage.getItem('subsanaciones_rutas')) || []; } catch (e) { guardadas = []; }
+        var antiguas = guardadas.some(function (r) { return r.lotes; });
+        guardadas.forEach(function (r) {
+            agregarParadas(r.cuad || '', r.paradas || r.lotes.map(function (id) { return { id: id, fecha: r.fecha || '', creada: r.creada }; }));
+        });
+        if (antiguas) { rutas.forEach(function (r) { ordenar(r, null); }); guardarRutas(); }
+    })();
+
+    // Pre-rutas plegadas en este dispositivo, por cuadrilla
+    var plegadas;
+    try { plegadas = JSON.parse(localStorage.getItem('subsanaciones_plegadas')) || {}; } catch (e) { plegadas = {}; }
+    function plegar(cuad, si) {
+        if (si) plegadas[cuad || ''] = 1; else delete plegadas[cuad || ''];
+        try { localStorage.setItem('subsanaciones_plegadas', JSON.stringify(plegadas)); } catch (e) {}
+    }
+
+    // Lote ya revisado (tiene visita registrada): sale de la pre-ruta; la visita sigue en la tabla de abajo
+
+    function quitarRevisadas() {
+        if (!cargado || (modoHoja && !rutasAlDia)) return;
+        rutas = rutas.filter(function (ruta) {
+            // El último revisado (la visita más reciente) es donde está el interventor: desde ahí se reordena lo que falta
+            var ultimo = null, iUltimo = Infinity;
+            ruta.paradas = ruta.paradas.filter(function (p) {
+                var v = visitaDe(p, infoLote(p.id));
+                if (v && registros.indexOf(v) < iUltimo) { iUltimo = registros.indexOf(v); ultimo = p.id; }
+                return !v;
+            });
+            if (ultimo !== null && ruta.paradas.length) {
+                ordenar(ruta, posicion || (puntosDe(String(ultimo)).length ? String(ultimo) : null));
+                subirRuta(ruta);
+            } else if (ultimo !== null) subirRuta(ruta);
+            return ruta.paradas.length > 0;
+        });
+        guardarRutas();
+    }
+
+    function pintarRutas() {
+        quitarRevisadas();
+        var cont = $('ruta');
+        if (!rutas.length) {
+            cont.innerHTML = '<button type="button" class="ruta-vacia" data-ruta="nueva">📋 <b>Cargar lotes a revisar</b>' +
+                '<span class="sub">Pegue el mensaje de WhatsApp con los lotes y arme su pre-ruta del día.</span></button>';
+            return;
+        }
+        cont.innerHTML = rutas.map(function (ruta, ri) {
+            var paradas = ruta.paradas.map(function (p) {
+                var x = infoLote(p.id); x.fecha = p.fecha; x.despues = p.despues; x.carga = p.carga; x.visita = visitaDe(p, x); x.encurso = !x.visita && p.encurso; return x;
+            });
+            var fechas = paradas.map(function (x) { return x.fecha; }).filter(function (f, i, a) { return f && a.indexOf(f) === i; }).sort();
+            var hechas = paradas.filter(function (x) { return x.visita; }).length;
+            // El lote que la cuadrilla está ejecutando no es "siguiente": aún no está listo para revisar
+            var pend = paradas.filter(function (x) { return !x.visita; }), listos = pend.filter(function (x) { return !x.encurso; }), sig = listos[0];
+            var llegada = porLlegada(ruta);
+            var proximas = listos.filter(function (x) { return x.c; }).slice(0, 4); // Google Maps en el celular admite 3 paradas + destino
+            var gmaps = proximas.length ? 'https://www.google.com/maps/dir/?api=1&destination=' + proximas[proximas.length - 1].c.join(',') +
+                (proximas.length > 1 ? '&waypoints=' + encodeURIComponent(proximas.slice(0, -1).map(function (x) { return x.c.join(','); }).join('|')) : '') + '&travelmode=driving' : '';
+            // "Ver todos en el mapa": el mapa pinta de otro color los ya revisados y los cerrados
+            var enMapa = paradas.filter(function (x) { return x.lote || x.mr; });
+            var idMapa = function (x) { return enMapaPorLote(x.lote) || !x.mr ? x.lote : x.mr; };
+            var cerrada = function (x) { return x.visita && x.visita.ESTADO === 'CERRADO'; };
+            var urlTodos = enMapa.length ? 'mapa_rapido.html?lote=' + enMapa.map(idMapa).join(',') +
+                '&hechos=' + enMapa.filter(function (x) { return x.visita && !cerrada(x) && x.visita.ESTADO !== 'PENDIENTE'; }).map(idMapa).join(',') +
+                '&subsanar=' + enMapa.filter(function (x) { return x.visita && x.visita.ESTADO === 'PENDIENTE'; }).map(idMapa).join(',') +
+                '&cerrados=' + enMapa.filter(cerrada).map(idMapa).join(',') +
+                '&curso=' + enMapa.filter(function (x) { return x.encurso; }).map(idMapa).join(',') +
+                // lote:ID de la visita, para el botón "Ver detalles de la visita" en la ficha del mapa
+                '&visitas=' + enMapa.filter(function (x) { return x.visita; }).map(function (x) { return idMapa(x) + ':' + x.visita.ID; }).join(',') : '';
+            var prev = posicion, prevUsted = !!posicion;
+            var plegada = !!plegadas[ruta.cuad || ''];
+            return '<div class="ruta-card' + (plegada ? ' plegada' : '') + '">' +
+                '<div class="ruta-cab">' +
+                    '<button type="button" class="ruta-plegar" data-ruta="plegar" data-ri="' + ri + '" aria-expanded="' + !plegada + '" aria-label="Plegar o desplegar">▾</button>' +
+                    '<div data-ruta="plegar" data-ri="' + ri + '"><b>' + (ruta.cuad ? 'Cuadrilla ' + esc(ruta.cuad) : 'Pre-ruta') + '</b>' +
+                    (fechas.length ? ' <span class="sub">· ejec. ' + esc(fechas.map(function (f) { return aTexto(f).slice(0, 5); }).join(', ')) + '</span>' : '') +
+                    '<div class="sub">' + (hechas ? (hechas === paradas.length ? '✓ Ruta completa · ' : '') + hechas + ' de ' + paradas.length + ' revisados'
+                                                  : paradas.length + ' por revisar') +
+                        (llegada ? ' · 🕒 en orden de llegada' : '') + '</div></div>' +
+                    '<button type="button" class="ruta-quitar" data-ruta="quitar" data-ri="' + ri + '" aria-label="Quitar pre-ruta">×</button></div>' +
+                '<div class="progreso"><span style="width:' + Math.round(100 * hechas / paradas.length) + '%"></span></div>' +
+                '<div class="ruta-acciones">' +
+                    (pend.length > 1 ? (llegada
+                        ? '<button type="button" class="secundario pequeno" data-ruta="ordenar" data-ri="' + ri + '">📍 Ordenar por cercanía</button>'
+                        : '<button type="button" class="secundario pequeno" data-ruta="ordenar" data-ri="' + ri + '">📍 Ordenar desde mi ubicación</button>' +
+                          '<button type="button" class="secundario pequeno" data-ruta="llegada" data-ri="' + ri + '">🕒 Orden de llegada</button>') : '') +
+                    (gmaps ? '<a class="boton primario pequeno" target="_blank" rel="noopener" href="' + esc(gmaps) + '">Ruta en Google Maps' + (pend.length > proximas.length ? ' (próximos ' + proximas.length + ')' : '') + '</a>' : '') +
+                    (urlTodos ? '<a class="boton secundario pequeno" href="' + esc(urlTodos) + '">Ver todos en el mapa</a>' : '') +
+                '</div>' +
+                '<ol class="paradas">' + paradas.map(function (x, i) {
+                    var dist = prev && x.c ? textoDist(distLotes(prev, String(x.id))) + (prevUsted ? ' de usted' : ' de la anterior') : '';
+                    if (x.c) { prev = String(x.id); prevUsted = false; }
+                    var aviso = !x.mr ? 'No está en la programación' : ruta.cuad && x.cuad && x.cuad !== ruta.cuad ? 'Programado para la cuadrilla ' + x.cuad : '';
+                    // Pendiente pero visitado hace poco (antes de esta pre-ruta): se avisa según la frecuencia
+                    var rec = !x.visita && visitaReciente(x.mr, x.lote, null, hoy());
+                    if (rec && rec.reciente) aviso = (aviso ? aviso + ' · ' : '') + 'Visitado ' + textoDias(rec.d) + (rec.frec ? ' (frecuencia ' + rec.frec.toLowerCase() + ')' : '');
+                    var llego = !x.visita && horaCarga(x.carga);
+                    return '<li class="parada' + (x.visita ? ' hecha' : x.encurso ? ' encurso' : x === sig ? ' siguiente' : '') + '">' +
+                        '<span class="n">' + (x.visita ? (cerrada(x) ? '🔒' : '✓') : x.encurso ? '▶' : i + 1) + '</span>' +
+                        '<div class="info"><div class="titulo"><b>' + esc(x.lote ? 'Lote ' + x.lote : x.mr) + '</b>' +
+                            (x.lote && x.mr ? ' <span class="sub">' + esc(x.mr) + '</span>' : '') +
+                            (fechas.length > 1 && x.fecha ? ' <span class="sub">· ejec. ' + esc(aTexto(x.fecha).slice(0, 5)) + '</span>' : '') +
+                            (llego && !x.encurso ? ' <span class="sub">· 🕒 ' + esc(llego) + '</span>' : '') +
+                            (x.encurso ? ' <span class="tag-curso">▶ Cuadrilla trabajando aquí' + (horaCarga(x.encurso) ? ' · desde ' + esc(horaCarga(x.encurso)) : '') + '</span>' : '') +
+                            (x === sig ? ' <span class="tag-sig">Siguiente</span>' : '') +
+                            (x.despues && !x.visita ? ' <span class="tag-despues">Para después</span>' : '') + (x.visita ? ' ' + badge(x.visita.ESTADO) : '') + '</div>' +
+                            (x.d ? '<div class="sub dir">' + esc(x.d) + '</div>' : '') +
+                            (aviso ? '<div class="sub alerta">' + esc(aviso) + '</div>' : '') +
+                            (dist && !x.visita ? '<div class="sub">📍 ' + dist + '</div>' : '') + '</div>' +
+                        '<div class="btns">' +
+                            (x.visita ? '<button type="button" class="secundario pequeno" data-editar="' + esc(x.visita.ID) + '">Ver visita</button>'
+                                      : '<button type="button" class="primario pequeno" data-ruta="registrar" data-ri="' + ri + '" data-id="' + esc(x.id) + '">Registrar</button>') +
+                            (x.c && !x.visita ? '<a class="boton secundario pequeno" target="_blank" rel="noopener" href="' + esc(urlIr(x.c)) + '">Cómo llegar</a>' : '') +
+                            (x.mr || x.lote ? '<a class="boton secundario pequeno" href="' + esc(urlMapa(x.mr, x.lote)) + '">Mapa</a>' : '') +
+                            (x.encurso && hayOperacion ? '<button type="button" class="secundario pequeno" data-ruta="operacion" data-ri="' + ri + '" data-id="' + esc(x.id) + '">🦺 Visita operación</button>' : '') +
+                            (x.encurso ? '<button type="button" class="secundario pequeno" data-ruta="termino" data-ri="' + ri + '" data-id="' + esc(x.id) + '">✓ Ya terminó</button>' : '') +
+                            (x.visita || x.encurso || pend.length < 2 ? '' : x.despues
+                                ? '<button type="button" class="secundario pequeno" data-ruta="ahora" data-ri="' + ri + '" data-id="' + esc(x.id) + '">Hacer ahora</button>'
+                                : '<button type="button" class="secundario pequeno" data-ruta="despues" data-ri="' + ri + '" data-id="' + esc(x.id) + '">⤓ Después</button>') +
+                            '<button type="button" class="secundario pequeno" data-ruta="quitar-parada" data-ri="' + ri + '" data-id="' + esc(x.id) + '" title="Quitar de la pre-ruta" aria-label="Quitar de la pre-ruta">✕</button>' +
+                        '</div></li>';
+                }).join('') + '</ol></div>';
+        }).join('') + '<button type="button" class="secundario pequeno otra" data-ruta="nueva">+ Otra pre-ruta</button>';
+    }
+
+    $('ruta').onclick = function (ev) {
+        var ed = ev.target.closest('[data-editar]');
+        if (ed) return abrir(registros.find(function (r) { return r.ID === ed.dataset.editar; }));
+        var b = ev.target.closest('[data-ruta]');
+        if (!b) return;
+        var ruta = rutas[+b.dataset.ri], accion = b.dataset.ruta;
+        if (accion === 'nueva') return abrirDlgRuta();
+        if (accion === 'plegar') { plegar(ruta.cuad, !plegadas[ruta.cuad || '']); return pintarRutas(); }
+        if (accion === 'despues' || accion === 'ahora') {
+            aplazar(ruta, b.dataset.id, accion === 'despues');
+            guardarRutas(); subirRuta(ruta); pintarRutas();
+            return toast(accion === 'despues' ? 'Lote ' + b.dataset.id + ' pasó al final. Cuando quiera hacerlo, toque "Hacer ahora".' : 'Lote ' + b.dataset.id + ' es ahora el siguiente.');
+        }
+        if (accion === 'quitar') {
+            if (!confirm('¿Quitar esta pre-ruta? Las visitas registradas no se borran.')) return;
+            rutas.splice(+b.dataset.ri, 1); guardarRutas(); subirRuta({ cuad: ruta.cuad, paradas: [] }); return pintarRutas();
+        }
+        // Quita un solo lote; si era el último, se va la pre-ruta completa
+        if (accion === 'quitar-parada') {
+            if (!confirm('¿Quitar el lote ' + b.dataset.id + ' de esta pre-ruta? Las visitas registradas no se borran.')) return;
+            ruta.paradas = ruta.paradas.filter(function (p) { return p.id !== b.dataset.id; });
+            if (!ruta.paradas.length) rutas.splice(+b.dataset.ri, 1);
+            guardarRutas(); subirRuta(ruta); pintarRutas();
+            return toast('Lote ' + b.dataset.id + ' quitado de la pre-ruta.');
+        }
+        if (accion === 'registrar' || accion === 'operacion') {
+            var ri = +b.dataset.ri, id = b.dataset.id, tipo = accion === 'operacion' ? OP : EJ;
+            if (cargado || !CFG.url) return registrarParada(ri, id, tipo);
+            alCargar = function () { registrarParada(ri, id, tipo); };
+            toast('Cargando la hoja… el formulario se abre en un momento.');
+            return;
+        }
+        if (accion === 'llegada') {
+            modos[ruta.cuad || ''] = 'llegada'; guardarModos();
+            ordenar(ruta, posicion); guardarRutas(); subirRuta(ruta); pintarRutas();
+            return toast('Ordenada como fueron llegando los lotes. El mapa los numera en el mismo orden.');
+        }
+        // La cuadrilla terminó el lote que estaba ejecutando: queda listo para revisar
+        if (accion === 'termino') {
+            var pt = ruta.paradas.find(function (p) { return p.id === b.dataset.id; });
+            if (pt) { if (!pt.fecha && pt.encurso) pt.fecha = pt.encurso.slice(0, 10); pt.encurso = ''; }
+            ordenar(ruta, posicion); guardarRutas(); subirRuta(ruta); pintarRutas();
+            return toast('Lote ' + b.dataset.id + ' listo para revisar.');
+        }
+        if (accion === 'ordenar') {
+            delete modos[ruta.cuad || '']; guardarModos();
+            var listo = function (desde) { ordenar(ruta, desde); guardarRutas(); subirRuta(ruta); pintarRutas(); };
+            if (!navigator.geolocation) return listo(null);
+            b.disabled = true; b.textContent = 'Ubicando…';
+            navigator.geolocation.getCurrentPosition(function (p) {
+                posicion = [p.coords.latitude, p.coords.longitude];
+                listo(posicion);
+                toast('Ordenada desde su ubicación actual.');
+            }, function () {
+                listo(null);
+                toast('Sin acceso a la ubicación: se ordenó desde el primer lote.');
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+        }
+    };
+
+    // Abre el formulario con los datos de la parada: cuadrilla y fecha de ejecución del mensaje, ficha y última visita
+    // tipo OPERACIÓN: la cuadrilla está trabajando ahí y se revisa la operación (PMT, EPP...)
+    function registrarParada(ri, id, tipo) {
+        var ruta = rutas[ri], x = infoLote(id), op = tipo === OP;
+        var n = ruta.paradas.findIndex(function (p) { return p.id === id; }), parada = ruta.paradas[n] || {};
+        abrir({ MICRORRUTA: x.mr, LOTE: x.lote, CUADRILLA: ruta.cuad, 'FECHA DE EJECUCIÓN': aTexto(parada.fecha || '') }, {
+            ri: ri,
+            html: (op ? '🦺 Visita durante la operación' : '📍 Pre-ruta') + (ruta.cuad ? ' · cuadrilla ' + esc(ruta.cuad) : '') +
+                (op ? '' : ' · parada ' + (n + 1) + ' de ' + ruta.paradas.length) + '<br>' +
+                '<b>' + esc(x.lote ? 'Lote ' + x.lote : x.mr) + '</b>' + (x.lote && x.mr ? ' · ' + esc(x.mr) : '') +
+                (op ? (parada.encurso && horaCarga(parada.encurso) ? ' · trabajando desde ' + esc(horaCarga(parada.encurso)) : '')
+                    : parada.fecha ? ' · ejecutado ' + esc(aTexto(parada.fecha)) : '') + (x.d ? '<br>' + esc(x.d) : '') +
+                fichaLote(x)
+        }, tipo);
+        if (x.mr) completar(x.mr);
+        // completar() pone la cuadrilla de la programación; se respeta la del mensaje si vino
+        if (ruta.cuad) form.querySelector('[data-campo="CUADRILLA"]').value = ruta.cuad;
+    }
+    // Lote que llega desde el mapa: ¿está en alguna pre-ruta? Se prefiere la parada aún sin revisar
+    function paradaDe(mr, lote) {
+        lote = /^\d+$/.test(lote) ? String(+lote) : String(lote || '').trim().toUpperCase();
+        mr = String(mr || '').trim().toUpperCase();
+        var halladas = [];
+        rutas.forEach(function (ruta, ri) {
+            ruta.paradas.forEach(function (p) {
+                var x = infoLote(p.id);
+                if ((lote && lote !== 'NA' && p.id === lote) || (mr && (p.id === mr || x.mr === mr))) halladas.push({ ri: ri, id: p.id, hecha: !!visitaDe(p, x) });
+            });
+        });
+        return halladas.find(function (h) { return !h.hecha; }) || halladas[0] || null;
+    }
+
+    function abrirDlgRuta() {
+        ['ruta-texto', 'ruta-fecha', 'ruta-cuad'].forEach(function (id) { $(id).value = ''; });
+        $('ruta-tipo-hecho').checked = true;
+        document.querySelector('[for="ruta-tipo-auto"]').hidden = true;
+        vistaRuta();
+        $('dlg-ruta').showModal();
+    }
+    // Lotes que quedan "en ejecución ahora" según la opción elegida en el diálogo
+    function lotesEnCurso(p) { return $('ruta-tipo-curso').checked ? p.lotes : $('ruta-tipo-auto').checked ? p.enCurso : []; }
+    function vistaRuta() {
+        var p = parsearMensaje($('ruta-texto').value), cuad = $('ruta-cuad').value.trim().replace(/^C/i, ''), curso = lotesEnCurso(p);
+        $('ruta-vista').innerHTML = p.lotes.length ? '<div class="sub">' + p.lotes.length + ' lote' + (p.lotes.length === 1 ? '' : 's') + ' encontrado' + (p.lotes.length === 1 ? '' : 's') + ':</div>' +
+            p.lotes.map(function (id) {
+                var x = infoLote(id), aviso = !x.mr ? 'no está en la programación' : cuad && x.cuad && x.cuad !== cuad ? 'es de la cuadrilla ' + x.cuad : '';
+                return '<span class="chip-ruta' + (aviso ? ' aviso' : '') + '">' + (curso.indexOf(id) !== -1 ? '<span class="curso">▶ </span>' : '') +
+                    esc(x.lote || x.mr) + (x.lote && x.mr ? ' · ' + esc(x.mr) : '') + (aviso ? ' ⚠ ' + esc(aviso) : '') + '</span>';
+            }).join('') + (curso.length ? '<div class="sub" style="margin-top:6px"><span class="curso" style="color:#1d4ed8">▶</span> = <b>en ejecución ahora</b>' +
+                (cuad ? ' por la cuadrilla ' + esc(cuad) : '') + '. El lote donde estaba antes esa cuadrilla queda listo para revisar.</div>' : '')
+            : '<div class="sub">Se toman del mensaje la fecha, la cuadrilla y los números de lote (o códigos de microrruta).</div>';
+        $('ruta-crear').disabled = !p.lotes.length;
+        $('ruta-crear').textContent = curso.length && curso.length === p.lotes.length ? 'Marcar en ejecución' : 'Crear pre-ruta';
+    }
+    $('ruta-texto').addEventListener('input', function () {
+        var p = parsearMensaje(this.value);
+        if (p.fecha) $('ruta-fecha').value = p.fecha;
+        if (p.cuad) $('ruta-cuad').value = p.cuad;
+        document.querySelector('[for="ruta-tipo-auto"]').hidden = p.tipo !== 'mixto';
+        $(p.tipo === 'curso' ? 'ruta-tipo-curso' : p.tipo === 'mixto' ? 'ruta-tipo-auto' : 'ruta-tipo-hecho').checked = true;
+        vistaRuta();
+    });
+    $('ruta-cuad').addEventListener('input', vistaRuta);
+    document.querySelectorAll('[name="ruta-tipo"]').forEach(function (r) { r.addEventListener('change', vistaRuta); });
+    $('ruta-pegar').onclick = function () {
+        if (!navigator.clipboard || !navigator.clipboard.readText) { $('ruta-texto').focus(); return toast('Mantenga presionado el cuadro y elija Pegar.'); }
+        navigator.clipboard.readText().then(function (t) {
+            $('ruta-texto').value = t;
+            $('ruta-texto').dispatchEvent(new Event('input'));
+        }, function () { $('ruta-texto').focus(); toast('Mantenga presionado el cuadro y elija Pegar.'); });
+    };
+    $('ruta-cancelar').onclick = function () { $('dlg-ruta').close(); };
+    $('ruta-crear').onclick = function () {
+        var p = parsearMensaje($('ruta-texto').value);
+        if (!p.lotes.length) return;
+        var cuad = $('ruta-cuad').value.trim().replace(/^C/i, ''), fecha = $('ruta-fecha').value;
+        var existia = rutas.some(function (r) { return r.cuad === cuad; });
+        var cursoIds = lotesEnCurso(p), curso = cursoIds.length > 0, ahora = new Date(), enCurso = marca(ahora);
+        // La cuadrilla pasó a otro lote: el que estaba ejecutando ya terminó y queda listo para revisar
+        if (curso) rutas.forEach(function (r) {
+            if (r.cuad === cuad) r.paradas.forEach(function (q) {
+                if (q.encurso && cursoIds.indexOf(q.id) === -1) { if (!q.fecha) q.fecha = q.encurso.slice(0, 10); q.encurso = ''; }
+            });
+        });
+        // Un segundo de diferencia por lote: así "orden de llegada" respeta el orden en que venían en el mensaje
+        var ruta = agregarParadas(cuad, p.lotes.map(function (id, i) {
+            return { id: id, fecha: fecha || (curso ? hoy() : ''), creada: hoy(), carga: marca(new Date(ahora.getTime() + i * 1000)),
+                     encurso: cursoIds.indexOf(id) !== -1 ? enCurso : '' };
+        }));
+        ordenar(ruta, posicion);
+        guardarRutas();
+        subirRuta(ruta);
+        $('dlg-ruta').close();
+        plegar(ruta.cuad, false);
+        pintarRutas();
+        toast(curso ? 'Cuadrilla ' + (cuad || '') + ' trabajando ahora en ' + cursoIds.join(', ') + '.'
+            : (existia ? 'Se sumaron a la cuadrilla ' + cuad + ' y se reordenó la ruta' : 'Pre-ruta creada y ordenada') + ' · ' + ruta.paradas.length + ' lotes.');
+        var tarjeta = $('ruta').querySelectorAll('.ruta-card')[rutas.indexOf(ruta)];
+        if (tarjeta) tarjeta.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    pintarRutas();
+
+    // ---------- Eventos generales ----------
+    $('btn-nuevo').onclick = function () { abrir(null); };
+    $('btn-recargar').onclick = cargar;
+    $('f-texto').oninput = pintar;
+    $('f-estado').onchange = pintar;
+    $('f-zona').onchange = pintar;
+    $('f-tipo').onchange = pintar;
+    $('f-cuadrilla').onchange = pintar;
+    $('resumen').onclick = function (ev) {
+        var t = ev.target.closest('.tarjeta');
+        if (t) { $('f-estado').value = t.dataset.estado; pintar(); }
+    };
+    $('tabla').onclick = function (ev) {
+        var b = ev.target.closest('[data-editar]');
+        if (b) return abrir(registros.find(function (r) { return r.ID === b.dataset.editar; }));
+        var s = ev.target.closest('[data-subsanar]');
+        if (s) return subsanar(registros.find(function (r) { return r.ID === s.dataset.subsanar; }));
+        var w = ev.target.closest('[data-wa]');
+        if (w) return mostrarWhatsapp(registros.find(function (r) { return r.ID === w.dataset.wa; }));
+        var el = ev.target.closest('[data-eliminar]');
+        if (el) {
+            el.disabled = true;
+            return eliminar(el.dataset.eliminar).catch(function (err) { toast('No se eliminó: ' + err.message); })
+                .then(function () { el.disabled = false; });
+        }
+        var v = ev.target.closest('[data-ver]');
+        if (v) {
+            var abierto = abiertos[v.dataset.ver] = !abiertos[v.dataset.ver];
+            v.closest('tr').nextElementSibling.hidden = !abierto;
+            v.textContent = abierto ? 'Ocultar ▴' : 'Ver detalles ▾';
+            v.setAttribute('aria-expanded', abierto);
+        }
+    };
+    // Recuerda qué fichas del celular quedaron abiertas al filtrar o guardar
+    $('tabla').addEventListener('toggle', function (ev) {
+        if (ev.target.dataset && ev.target.dataset.id) abiertos[ev.target.dataset.id] = ev.target.open;
+    }, true);
+    if (CFG.hoja) { $('abrir-hoja').href = CFG.hoja; $('abrir-hoja').hidden = false; }
+
+    // ---------- Excel con el formato de interventoría ----------
+    // Una hoja por tipo de visita, con lo que esté filtrado. Encabezados verdes (datos) y azules (ítems);
+    // NO pendiente en amarillo, NO ya subsanado en verde, y la observación con el mismo color.
+    // ExcelJS (permite colores) se carga solo al pedirlo.
+    var XL = { verde: 'FF00B050', azul: 'FF9BC2E6', amarillo: 'FFFFFF00', verdeNo: 'FF00FF00', gris: 'FFD9D9D9' };
+    function textoObservacion(r) {
+        var obs = String(r['OBSERVACIONES NOVEDADES'] || '').trim(), n = norm(obs), sinNov = !obs || n === 'SIN NOVEDAD';
+        if (r.ESTADO === 'SUBSANADO') return n.indexOf('SUBSANAD') !== -1 ? obs
+            : 'NOVEDAD SUBSANADA' + (r['FECHA SUBSANACIÓN'] ? ' EL ' + r['FECHA SUBSANACIÓN'] : '') + (sinNov ? '' : ' - ' + obs);
+        if (r.ESTADO === 'PENDIENTE') return n.indexOf('PENDIENTE') !== -1 ? obs : 'PENDIENTE POR SUBSANAR' + (sinNov ? '' : ' - ' + obs);
+        return obs || 'SIN NOVEDAD';
+    }
+    function hojaExcel(libro, nombre, lista, op) {
+        var its = op ? itemsOp : items;
+        var inicio = ['MICRORRUTA', 'LOTE', 'ÁREA M2', 'ZONA', 'CUADRILLA'].concat(op ? [] : ['FECHA DE EJECUCIÓN'], ['FECHA DE LA VISITA', 'INTERVENTOR']);
+        var fin = [op ? 'OBSERVACIONES' : 'OBSERVACIONES NOVEDADES', op ? 'CANTIDAD DE NOVEDADES' : 'CANTIDAD DE NOVEDADES POR MICRORRUTA'];
+        // Seguimiento de la subsanación (no está en el Excel original): al final, en gris
+        var extra = ['ESTADO', 'FECHA SUBSANACIÓN', 'OBSERVACIÓN SUBSANACIÓN', 'EVIDENCIA', 'ID'];
+        var cab = inicio.concat(its, fin, extra);
+        var ws = libro.addWorksheet(nombre, { views: [{ state: 'frozen', ySplit: 1 }] });
+        var borde = { style: 'thin', color: { argb: 'FF808080' } }, bordes = { top: borde, left: borde, bottom: borde, right: borde };
+        var relleno = function (argb) { return { type: 'pattern', pattern: 'solid', fgColor: { argb: argb } }; };
+        ws.addRow(cab);
+        ws.getRow(1).height = 48;
+        ws.getRow(1).eachCell(function (c, i) {
+            var nombreCol = cab[i - 1];
+            c.font = { bold: true, size: 9 };
+            c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            c.fill = relleno(its.indexOf(nombreCol) !== -1 ? XL.azul : extra.indexOf(nombreCol) !== -1 ? XL.gris : XL.verde);
+            c.border = bordes;
+        });
+        // Del más antiguo al más reciente, como se lleva el Excel
+        lista.slice().sort(function (a, b) { return claveFecha(a['FECHA DE LA VISITA']).localeCompare(claveFecha(b['FECHA DE LA VISITA'])); }).forEach(function (r) {
+            var subs = itemsSubsanados(r), enNo = itemsEnNo(r);
+            var valores = cab.map(function (c) {
+                if (its.indexOf(c) !== -1) return subs.indexOf(c) !== -1 ? 'NO' : valorItem(r[c]) || String(r[c] || '');
+                if (c === fin[0]) return textoObservacion(r);
+                if (c === fin[1]) return enNo.length + subs.length;
+                return String(r[c] || '');
+            });
+            var fila = ws.addRow(valores);
+            fila.eachCell({ includeEmpty: true }, function (cel, i) {
+                var c = cab[i - 1];
+                cel.font = { size: 9 };
+                cel.alignment = { horizontal: 'center', vertical: 'middle', wrapText: c === fin[0] || c === 'OBSERVACIÓN SUBSANACIÓN' };
+                cel.border = bordes;
+                if (its.indexOf(c) !== -1) {
+                    if (enNo.indexOf(c) !== -1) cel.fill = relleno(XL.amarillo);
+                    else if (subs.indexOf(c) !== -1) cel.fill = relleno(XL.verdeNo);
+                }
+                if (c === fin[0]) {
+                    if (r.ESTADO === 'PENDIENTE') cel.fill = relleno(XL.amarillo);
+                    else if (r.ESTADO === 'SUBSANADO') cel.fill = relleno(XL.verdeNo);
+                }
+            });
+        });
+        ws.columns.forEach(function (col, i) {
+            var c = cab[i];
+            col.width = c === fin[0] ? 46 : c === 'OBSERVACIÓN SUBSANACIÓN' || c === 'EVIDENCIA' ? 30 : its.indexOf(c) !== -1 ? 13 : c === 'MICRORRUTA' ? 12 : 11;
+        });
+        ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: cab.length } };
+    }
+    $('btn-excel').onclick = function () {
+        var lista = filtrados();
+        if (!lista.length) { toast('No hay registros para exportar.'); return; }
+        var exportar = function () {
+            var libro = new ExcelJS.Workbook();
+            var ej = lista.filter(deLote), op = lista.filter(esOp);
+            if (ej.length) hojaExcel(libro, 'Lote ejecutado', ej, false);
+            if (op.length) hojaExcel(libro, 'Durante la operación', op, true);
+            libro.xlsx.writeBuffer().then(function (buf) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+                a.download = 'subsanaciones_' + hoy() + '.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            }).catch(function (err) { toast('No se pudo generar el Excel: ' + err.message); });
+        };
+        if (window.ExcelJS) return exportar();
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+        s.onload = exportar;
+        s.onerror = function () { toast('No se pudo cargar el generador de Excel (revise la conexión).'); };
+        document.head.appendChild(s);
+    };
+
+    cargar();
+})();
+</script>
+</body>
+</html>

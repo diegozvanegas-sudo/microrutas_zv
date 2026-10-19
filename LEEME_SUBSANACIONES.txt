@@ -1,0 +1,111 @@
+PESTAÑA DE SUBSANACIONES DE LOTES
+=================================
+
+Qué hace
+- Página aparte: subsanaciones.html (botón 📋 en el mapa, debajo de la lupa, o enlace
+  "Registrar subsanación" en la ventana de cada lote, que ya llega con la microrruta y el lote).
+- Crear, ver, editar y eliminar visitas de interventoría con las mismas columnas del Excel:
+  MICRORRUTA, LOTE, ÁREA M2, ZONA, CUADRILLA, FECHA DE EJECUCIÓN, FECHA DE LA VISITA, INTERVENTOR,
+  los 9 ítems (SI / NO / N/A) y OBSERVACIONES NOVEDADES. Lote, área, zona y cuadrilla se llenan
+  solos al escoger la microrruta.
+- Al final se agregan columnas de seguimiento: ESTADO, FECHA SUBSANACIÓN, OBSERVACIÓN SUBSANACIÓN,
+  EVIDENCIA, ID, REGISTRADO POR, ÚLTIMA MODIFICACIÓN.
+- El estado se calcula solo (SI = cumple):
+    * algún ítem en NO                      -> PENDIENTE (muestra cuántos días lleva desde la visita)
+    * todo en SI después de estar pendiente  -> SUBSANADO (se pone la fecha de subsanación)
+    * todo en SI desde la primera visita     -> SIN NOVEDAD
+    * botón "🔒 Lote cerrado" (no se pudo entrar): ítems en N/A y la observación empieza con
+      LOTE CERRADO                           -> CERRADO (en la pre-ruta cuenta como revisado)
+  En la pre-ruta, "Ver todos en el mapa" pinta los lotes ya registrados en verde (✓), los cerrados
+  en gris (🔒) y los que faltan en rojo con su número de parada.
+- Al registrar, si el lote ya tiene una visita reciente se avisa ("Visitado hace 8 días") según su
+  frecuencia de la programación: Quincenal = 15 días, Mensual = 30 días.
+- "Registrar subsanación" desde el mapa: si el lote está en una pre-ruta, el formulario llega con la
+  cuadrilla y la fecha de ejecución de esa parada.
+- Cada visita tiene "🗑 Eliminar" en Ver detalles (pide confirmación).
+- Mensajes como "Cuadrilla #4 inicia labores Lote de inicio Z2CC0339" marcan ese lote como EN EJECUCIÓN AHORA
+  (azul, ▶): no se propone como siguiente hasta que la cuadrilla pase a otro lote o se toque "✓ Ya terminó".
+  "Terminó el lote 532, pasamos al 371" deja el 532 listo para revisar y el 371 en ejecución.
+- Cada lote guarda la hora en que llegó (columna CARGADA). "🕒 Orden de llegada" ordena la pre-ruta así,
+  y "Ver todos en el mapa" numera los lotes en ese mismo orden. "📍 Ordenar por cercanía" vuelve al recorrido corto.
+  La columna EN CURSO de la pestaña "Rutas" requiere actualizar el Apps Script (nueva versión).
+- Ubicar un lote por coordenadas: en el buscador del mapa rápido (o en "Ir al mapa") escriba o pegue
+  6.2751N 75.5737W, 6.2751, -75.5737 o un link de Google Maps. El botón 📷 lee la foto: primero el GPS
+  guardado en ella y, si no lo tiene (WhatsApp lo borra), el texto de la marca de agua.
+  Se marca el punto y se abre el lote que lo contiene o, si no cae dentro de ninguno, el más cercano (hasta 150 m).
+  También sirve el enlace mapa_rapido.html?ll=6.2751,-75.5737
+  Para subsanar: abra el registro pendiente, cambie a SI los ítems corregidos, adjunte evidencia y guarde.
+- Todo se guarda en una Hoja de cálculo de Google en su Drive (una fila por visita, una columna por ítem).
+
+Pasar los registros que ya tiene en Excel
+- Copie las filas de datos de su Excel (sin el encabezado, columnas MICRORRUTA a OBSERVACIONES NOVEDADES)
+  y péguelas en la hoja "Subsanaciones" desde la celda A2. Al abrir o actualizar la página, cada fila
+  pegada recibe su ID y su ESTADO automáticamente.
+  Botón "Descargar Excel" baja un .xlsx con lo que esté filtrado. Desde Drive también: Archivo > Descargar > Microsoft Excel.
+
+Por qué Hoja de Google y no un .xlsx
+- Una página publicada en GitHub Pages no puede escribir dentro de un archivo .xlsx de Drive.
+  La Hoja de Google sí, por medio de un Apps Script gratuito, y se abre o descarga como Excel cuando quiera.
+
+Instalación (una sola vez, unos 5 minutos)
+1. En Google Drive: Nuevo > Hojas de cálculo de Google. Póngale nombre, p. ej. "Subsanaciones lotes".
+2. En la hoja: Extensiones > Apps Script. Borre lo que haya y pegue TODO el contenido de apps_script/Code.gs.
+   (Opcional: escriba una clave en  var CLAVE = 'su-clave';  para que solo quien la sepa pueda guardar.)
+   Guarde (icono de disquete).
+3. Arriba, en la lista de funciones, elija "configurar" y pulse Ejecutar. Google pedirá permisos:
+   Revisar permisos > su cuenta > Configuración avanzada > Ir a ... (no seguro) > Permitir.
+   Esto crea las hojas "Subsanaciones" e "Items".
+4. Implementar > Nueva implementación > tipo "Aplicación web":
+     - Ejecutar como: Yo
+     - Quién tiene acceso: Cualquier usuario
+   Implementar y copie la URL que termina en /exec.
+5. Abra js/subsanaciones_config.js y pegue la URL entre las comillas de  url: ''.
+   Si quiere el botón "Abrir hoja en Drive", pegue el link de la hoja en  hoja: ''.
+6. Suba los archivos nuevos/cambiados a GitHub (subsanaciones.html, js/subsanaciones_config.js, index.html).
+
+Cambiar los ítems de revisión
+- En la hoja "Items": columna A el nombre del ítem, columna B "SI" o "NO" (activo).
+  Vienen los 9 del Excel. Agregar una fila = ítem nuevo (su columna se crea sola al final de
+  "Subsanaciones" al guardar). Poner "NO" lo oculta del formulario sin borrar lo ya registrado.
+  Después de cambiar ítems, pulse "Actualizar" en la página.
+
+Visitas durante la operación (pestaña "Operación")
+- Al crear una visita se elige el tipo: "🌿 Lote ejecutado" (la revisión de siempre) o "🦺 Durante la operación".
+  La de operación revisa mientras la cuadrilla trabaja: IMPLEMENTACIÓN Y ESTADO DEL PMT, VALLA INFORMATIVA,
+  MALLA(S) DE PROTECCIÓN, DEMARCACIÓN DEL ÁREA DE TRABAJO, CARNET, ESTADO DE DOTACIÓN, EPP, HERRAMIENTAS,
+  ROTULACIÓN DE RECIPIENTES y MANEJO DE COMBUSTIBLE. No lleva fecha de ejecución.
+- Se guarda en la pestaña "Operación" (IDs OPE-00001...) y sus ítems se cambian en la pestaña "Items Operación".
+  Pendiente / subsanado funciona igual. No cuenta como revisión del lote: la parada de la pre-ruta sigue pendiente.
+- En la pre-ruta, los lotes con la cuadrilla trabajando (▶ azul) tienen el botón "🦺 Visita operación".
+- El formulario de operación muestra un recuadro "📌 Tener en cuenta" (informativo, no se guarda). Se edita en la
+  pestaña "Recordatorios Operación": columna A el texto, columna B SI/NO. Pulse "Actualizar" en la página después.
+- Requiere actualizar el Apps Script (pegar de nuevo apps_script/Code.gs y publicar nueva versión).
+  Al abrir la página se crean solas las pestañas "Operación" e "Items Operación".
+
+Excel con el formato de interventoría
+- "Descargar Excel" baja una hoja por tipo de visita (Lote ejecutado / Durante la operación) con lo filtrado:
+  encabezados verdes y azules, NO pendiente en amarillo, NO ya subsanado en verde, observación "NOVEDAD SUBSANADA
+  EL dd/mm/aaaa" o "PENDIENTE POR SUBSANAR", y CANTIDAD DE NOVEDADES. Al final van ESTADO, fechas e ID en gris.
+- Para saber qué ítems estuvieron en NO, el Apps Script anota la columna ÍTEMS SUBSANADOS al subsanar
+  (solo desde esta versión; las subsanaciones anteriores salen con sus ítems en SI).
+- En la hoja de Google cada fila guardada se colorea igual. Para colorear las que ya existían, ejecute una vez
+  la función "colorearTodo" desde el editor de Apps Script.
+
+Pre-rutas compartidas (pestaña "Rutas")
+- Las pre-rutas (lotes que mandan a revisar) se guardan en la pestaña "Rutas" de la misma hoja, una fila
+  por lote: CUADRILLA, LOTE, FECHA DE EJECUCIÓN, ORDEN, CARGADA. Así se ven en cualquier celular.
+- Quien manda los lotes puede: pegar el mensaje en la página (botón "Cargar lotes a revisar") o escribir
+  filas a mano en "Rutas" con CUADRILLA, LOTE y FECHA DE EJECUCIÓN (dd/mm/aaaa). Al abrir la página
+  esos lotes se ordenan por cercanía y se guarda el orden.
+- Requiere actualizar el Apps Script (pegar de nuevo apps_script/Code.gs y publicar nueva versión, ver abajo).
+  Mientras no se actualice, la pre-ruta sigue funcionando pero solo en el celular donde se cargó.
+
+Si cambia el código del Apps Script
+- Implementar > Administrar implementaciones > editar (lápiz) > Versión: Nueva versión > Implementar.
+  Así la URL sigue siendo la misma.
+
+Notas
+- Con "Cualquier usuario", quien tenga la URL /exec puede leer y escribir; por eso conviene poner CLAVE.
+- La clave y el nombre de "Registrado por" se recuerdan en cada navegador.
+- No edite a mano la columna ID de la hoja; el resto de columnas sí se pueden corregir directamente en Drive.
+- Probar en el computador: python -m http.server 8000  y abrir http://localhost:8000/subsanaciones.html
