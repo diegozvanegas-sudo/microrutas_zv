@@ -7,7 +7,7 @@
  *   5. Descargar Excel (CSV) de lo que se ve en el mapa
  *   6. Resumen por comuna al hacer clic en una comuna
  *   7. Seleccionar un área arrastrando un recuadro
- *   8. Marcar lotes como intervenidos (nota y foto), local o compartido por Google Sheets
+ *   8. Estado de cada lote según los registros de la hoja compartida (Google Sheets), si está configurada
  *   9. Calendario: qué microrrutas están vencidas o tocan esta semana
  * Depende de index.html (layer_zonasverdes__areas_zonas_verdes_2, filterFunc, popupLote...)
  * y de js/buscar_direccion.js y js/configuracion.js.
@@ -140,79 +140,6 @@
     return { clave: 'aldia', texto: 'Al día · próxima ' + fechaCorta(prox), prox: prox };
   }
 
-  function registrar(lista, nota, fotoDataUrl) {
-    var hora = new Date().toISOString(), fecha = hoyISO(), quien = ajustes.quien || '';
-    var filas = lista.map(function (f) {
-      var p = f.properties;
-      var r = { fid: p.fid, microruta: mr(f), lote: p.No_Lote || '', cuadrilla: p.CUADRILLA || '', fecha: fecha, hora: hora, nota: nota || '', quien: quien, foto: fotoDataUrl ? 'pendiente' : '' };
-      registros[p.fid] = { fecha: fecha, hora: hora, nota: r.nota, quien: quien, foto: fotoDataUrl ? 'local:' + hora : '' };
-      return r;
-    });
-    if (fotoDataUrl) guardarFoto('local:' + hora, fotoDataUrl);
-    if (!guardar(CLAVE_REG, registros)) aviso('El celular no tiene espacio para guardar más registros.');
-    if (urlRegistro()) {
-      pendientes.push({ registros: filas, foto: fotoDataUrl || null, hora: hora });
-      guardar(CLAVE_PEND, pendientes);
-      enviarPendientes();
-    }
-    refrescarTodo();
-    aviso(lista.length === 1 ? 'Lote marcado como intervenido hoy.' : lista.length + ' lotes marcados como intervenidos hoy.');
-  }
-  function deshacer(f) {
-    delete registros[f.properties.fid];
-    guardar(CLAVE_REG, registros);
-    if (urlRegistro()) {
-      pendientes.push({ registros: [{ fid: f.properties.fid, microruta: mr(f), lote: f.properties.No_Lote || '', cuadrilla: f.properties.CUADRILLA || '', fecha: '', hora: new Date().toISOString(), nota: 'BORRADO', quien: ajustes.quien || '', foto: '' }], foto: null });
-      guardar(CLAVE_PEND, pendientes);
-      enviarPendientes();
-    }
-    refrescarTodo();
-  }
-
-  // Fotos locales en IndexedDB (no caben muchas en localStorage)
-  var bdFotos = null;
-  function abrirBD() {
-    if (bdFotos) return bdFotos;
-    bdFotos = new Promise(function (ok, mal) {
-      try {
-        var req = indexedDB.open('microrutas_fotos', 1);
-        req.onupgradeneeded = function () { req.result.createObjectStore('fotos'); };
-        req.onsuccess = function () { ok(req.result); };
-        req.onerror = function () { mal(req.error); };
-      } catch (e) { mal(e); }
-    });
-    return bdFotos;
-  }
-  function guardarFoto(clave, dataUrl) {
-    return abrirBD().then(function (bd) {
-      return new Promise(function (ok) { var tx = bd.transaction('fotos', 'readwrite'); tx.objectStore('fotos').put(dataUrl, clave); tx.oncomplete = ok; tx.onerror = ok; });
-    }).catch(function () {});
-  }
-  function leerFoto(clave) {
-    return abrirBD().then(function (bd) {
-      return new Promise(function (ok) { var q = bd.transaction('fotos').objectStore('fotos').get(clave); q.onsuccess = function () { ok(q.result); }; q.onerror = function () { ok(null); }; });
-    }).catch(function () { return null; });
-  }
-  function reducirFoto(archivo) {
-    return new Promise(function (ok, mal) {
-      var lector = new FileReader();
-      lector.onerror = mal;
-      lector.onload = function () {
-        var img = new Image();
-        img.onerror = mal;
-        img.onload = function () {
-          var max = 900, w = img.width, h = img.height, k = Math.min(1, max / Math.max(w, h));
-          var c = document.createElement('canvas');
-          c.width = Math.round(w * k); c.height = Math.round(h * k);
-          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-          ok(c.toDataURL('image/jpeg', 0.72));
-        };
-        img.src = lector.result;
-      };
-      lector.readAsDataURL(archivo);
-    });
-  }
-
   // Sincronización con Google Sheets (Apps Script). Ver integraciones/registro_apps_script.gs
   var enviando = false;
   function enviarPendientes() {
@@ -325,29 +252,10 @@
     return '<a href="https://www.google.com/maps/dir/?api=1&destination=' + ll + '" target="_blank" rel="noopener">' + (corto ? 'Ir' : 'Cómo llegar (Google Maps)') + '</a>' +
       (corto ? '' : ' · <a href="https://waze.com/ul?ll=' + ll + '&navigate=yes" target="_blank" rel="noopener">Waze</a>');
   };
-  function lotesMicroruta(f) {
-    var m = mr(f);
-    return m ? features.filter(function (x) { return mr(x) === m; }) : [f];
-  }
   function popupLoteCompleto(layer) {
-    var f = layer.feature, p = f.properties;
+    var f = layer.feature;
     var html = window.popupLote(f);
     html += '<p class="mr-llegar">🧭 ' + window.enlacesComoLlegar(f) + '</p>';
-    var r = registros[p.fid], e = estado(f);
-    html += '<div class="mr-registro" data-fid="' + esc(p.fid) + '">';
-    html += '<div class="mr-estado"><i style="background:' + COLOR_ESTADO[e.clave] + '"></i><b>' + esc(e.texto) + '</b></div>';
-    if (r) {
-      html += '<small>Última intervención: ' + esc(fechaCorta(r.fecha)) + (r.quien ? ' · ' + esc(r.quien) : '') + '</small>' +
-        (r.nota ? '<small>Nota: ' + esc(r.nota) + '</small>' : '') +
-        (r.foto ? '<img class="mr-foto" alt="Foto de la intervención" data-foto="' + esc(r.foto) + '">' : '');
-    }
-    var n = lotesMicroruta(f).length;
-    html += '<textarea class="mr-nota" rows="2" placeholder="Nota (opcional)"></textarea>' +
-      '<label class="mr-archivo">📷 Foto (opcional)<input type="file" accept="image/*" capture="environment" class="mr-foto-input"></label>' +
-      '<button type="button" data-accion="lote">✔ Lote intervenido hoy</button>' +
-      (n > 1 ? '<button type="button" data-accion="microruta" class="mr-sec">✔ Toda la microrruta (' + n + ' lotes)</button>' : '') +
-      (r ? '<button type="button" data-accion="deshacer" class="mr-link">Quitar registro</button>' : '') +
-      '</div>';
     return html;
   }
   function onEachLote(feature, layer) {
@@ -356,39 +264,6 @@
   }
   capa.options.onEachFeature = onEachLote;
   capa.eachLayer(function (l) { l.bindPopup(popupLoteCompleto, { maxHeight: 440, maxWidth: 320 }); });
-
-  map.on('popupopen', function (e) {
-    var el = e.popup.getElement(), caja = el && el.querySelector('.mr-registro');
-    if (!caja) return;
-    var f = porFid[caja.getAttribute('data-fid')];
-    var img = caja.querySelector('.mr-foto');
-    if (img) {
-      var src = img.getAttribute('data-foto');
-      if (/^local:/.test(src)) leerFoto(src).then(function (d) { if (d) img.src = d; else img.remove(); });
-      else if (/^https?:/.test(src)) img.src = src;
-      else img.remove();
-      img.onload = function () { e.popup.update(); };
-    }
-    caja.querySelectorAll('button[data-accion]').forEach(function (b) {
-      b.onclick = function () {
-        var accion = b.getAttribute('data-accion');
-        if (accion === 'deshacer') { deshacer(f); map.closePopup(); return; }
-        if (!ajustes.quien) {
-          var nombre = window.prompt('¿Quién registra? (su nombre o cuadrilla; se pregunta una sola vez)', '');
-          if (nombre === null) return;
-          ajustes.quien = nombre.trim();
-          guardar(CLAVE_AJUSTES, ajustes);
-        }
-        var nota = caja.querySelector('.mr-nota').value.trim();
-        var archivo = caja.querySelector('.mr-foto-input').files[0];
-        var lista = accion === 'microruta' ? lotesMicroruta(f) : [f];
-        b.disabled = true; b.textContent = 'Guardando…';
-        (archivo ? reducirFoto(archivo) : Promise.resolve(null))
-          .then(function (foto) { registrar(lista, nota, foto); map.closePopup(); })
-          .catch(function () { aviso('No se pudo leer la foto.'); b.disabled = false; });
-      };
-    });
-  });
 
   // ---------------------------------------------------------------- 1. Lotes visibles + resumen
   function lotesVisibles() {
@@ -591,16 +466,9 @@
     '.mr-seccion select,.mr-campo input{width:100%;min-height:36px;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:6px;font:inherit;background:#fff;color:var(--ink)}' +
     '.mr-leyenda{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:8px;font-size:11px;color:#475569}' +
     '.mr-boton{display:block;width:100%;margin:6px 0 0;padding:9px 12px;border:0;border-radius:8px;color:#fff;background:var(--brand);font:inherit;font-size:13px;font-weight:650;cursor:pointer;text-align:center;box-sizing:border-box}' +
-    '.mr-boton.mr-sec,.mr-registro .mr-sec{color:var(--brand);background:#e3f3ec}' +
+    '.mr-boton.mr-sec{color:var(--brand);background:#e3f3ec}' +
     '.mr-fila{display:flex;gap:8px}.mr-fila>*{flex:1}' +
     '.mr-llegar{margin:6px 0 0}' +
-    '.mr-registro{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:5px}' +
-    '.mr-registro small{color:#475569}.mr-estado{font-size:13px}' +
-    '.mr-registro textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:6px;font:inherit;font-size:12px;resize:vertical}' +
-    '.mr-archivo{font-size:12px;color:var(--brand);cursor:pointer}.mr-archivo input{display:block;font-size:11px;margin-top:3px;max-width:100%}' +
-    '.mr-registro button{border:0;border-radius:8px;padding:8px;font:inherit;font-size:12px;font-weight:650;color:#fff;background:var(--brand);cursor:pointer}' +
-    '.mr-registro button:disabled{opacity:.6}.mr-registro .mr-link{background:none;color:#b91c1c;font-weight:500;padding:2px}' +
-    '.mr-foto{max-width:100%;border-radius:8px;margin-top:4px}' +
     '#mr-hoja{display:none;position:fixed;z-index:2500;top:12px;right:12px;width:380px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(15,45,35,.25);font-size:13px}' +
     '#mr-hoja.is-open{display:block}#mr-hoja header{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface);border-bottom:1px solid var(--line)}' +
     '#mr-hoja h2{margin:0;font-size:15px}#mr-hoja h3{margin:14px 0 4px;font-size:13px}.mr-cuerpo{padding:4px 14px 14px}' +
@@ -757,7 +625,8 @@
     onAdd: function () {
       var div = L.DomUtil.create('div', 'leaflet-bar mr-control');
       div.innerHTML = '<a href="#" id="mr-btn-aqui" title="¿Qué lote es aquí? (usa el GPS)" role="button">🎯</a>' +
-        '<a href="#" id="mr-btn-area" title="Seleccionar un área: arrastre un recuadro en el mapa" role="button">⬚</a>';
+        '<a href="#" id="mr-btn-area" title="Seleccionar un área: arrastre un recuadro en el mapa" role="button">⬚</a>' +
+        '<a href="rapido.html" title="Mapa rápido (ideal para el celular)">⚡</a>';
       L.DomEvent.disableClickPropagation(div);
       div.querySelector('#mr-btn-aqui').onclick = function (e) { e.preventDefault(); queLoteAqui(this); };
       div.querySelector('#mr-btn-area').onclick = function (e) { e.preventDefault(); alternarArea(!modoArea); };
