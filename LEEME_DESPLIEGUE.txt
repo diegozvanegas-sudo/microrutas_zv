@@ -21,6 +21,37 @@ Qué tiene de nuevo
   Resultado: 8.055 de 8.060 polígonos muestran dirección (los 5 restantes no tienen geometría).
 - Archivos cambiados: index.html, js/buscar_direccion.js, data/direcciones_lotes.js y data/direcciones_fid.js (nuevos).
 
+MAPA COMPLETO MÁS RÁPIDO (index.html, versión publicada + 3 mejoras de velocidad)
+- Los polígonos se dibujan en canvas (antes SVG): zoom y desplazamiento ~2 a 4 veces más fluidos.
+- Archivos de polígonos aligerados con los mismos lotes y los mismos datos (scripts/optimizar_mapa_completo.js):
+    zonas verdes 15,4 MB -> 8,5 MB (comprimido 4,5 -> 1,9 MB), Comunas 5,7 -> 0,4 MB,
+    Espartillos 2,5 -> 1,6 MB. Solo se acortan coordenadas (6 decimales ≈ 11 cm, sin altura Z)
+    y se quitan vértices sobrantes (< 0,2 m; en comunas < 1 m). No se nota en el mapa.
+- Queda guardado en el navegador (sw.js): desde la segunda visita no se vuelven a descargar
+  los polígonos si no cambiaron.
+- Los originales de qgis2web están en data/originales/. Si QGIS exporta datos nuevos: copie los
+  archivos nuevos a data/originales/ y ejecute
+      node scripts/optimizar_mapa_completo.js
+      node scripts/generar_mapa_rapido.js      (para el mapa rápido)
+  y suba data/ a GitHub. (No hace falta subir data/originales/.)
+
+MAPA RÁPIDO (rapido.html) — ideal para el celular
+- Abre en: https://SU_USUARIO.github.io/microrutas_zv/rapido.html  (botón ⚡ en el mapa completo).
+- Carga ~0,85 MB en vez de 4,3 MB (polígonos simplificados ~0,3 m; no se nota) y pinta en canvas.
+- Queda guardado en el navegador (sw.js): las siguientes veces abre al instante y sin señal. Cada vez
+  que se abre pregunta al servidor si los datos cambiaron; si no, no descarga nada. Si cambiaron,
+  sale "Hay datos nuevos · Actualizar". El mapa completo también usa este guardado.
+- Filtro por cuadrilla con botones (en PC, Ctrl+clic para elegir varias). Se recuerda el filtro.
+- Ficha de la cuadrilla: lotes, microrrutas, m², frecuencia, comunas y lista de microrrutas.
+- Ficha del lote: microrruta, lote, zona, frecuencia, comuna, dirección, descripción, Cómo llegar,
+  Waze, Google Maps, copiar coordenadas y "Ver toda la microrruta".
+- Buscador: microrruta, lote, dirección/comuna, coordenadas o link de Google Maps. Botón GPS.
+- IMPORTANTE: si cambian los polígonos o las direcciones, regenere los datos del mapa rápido:
+      node scripts/generar_mapa_rapido.js
+  (crea data/lotes_rapido.js y data/lotes_rapido_textos.js) y súbalos a GitHub.
+- Se quitó de la ventana del lote la sección de registro (estado, nota, foto, "Lote intervenido hoy"
+  y "Toda la microrruta").
+
 HERRAMIENTAS DE OPERACIÓN (js/herramientas.js)
 - Panel de filtros (botón ☰):
     * Filtros nuevos: Microrruta y Frecuencia. Zona y Comuna ahora sí filtran (antes no hacían nada).

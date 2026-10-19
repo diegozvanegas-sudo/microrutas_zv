@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#167a55">
+<title>Microrrutas · Mapa rápido</title>
+<link rel="preload" href="data/lotes_rapido.js" as="script">
+<link rel="stylesheet" href="css/leaflet.css">
+<style>
+  :root {
+    --brand: #167a55; --brand-2: #0f6847; --brand-suave: #e3f3ec;
+    --ink: #1f2937; --ink-2: #475569; --ink-3: #64748b;
+    --line: #dce4e8; --surface: #fff; --fondo: #f3f6f5;
+    --lateral: 384px;
+    --sombra: 0 10px 30px rgba(15, 45, 35, .18);
+    --arriba: env(safe-area-inset-top, 0px); --abajo: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font: 14px/1.4 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; color: var(--ink); background: var(--fondo); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  #mapa { position: fixed; inset: 0 0 0 var(--lateral); background: #dfe7e3; }
+  .leaflet-container { font: inherit; }
+
+  /* ---------------------------------------------------------------- panel lateral (PC) */
+  #lateral { position: fixed; left: 0; top: 0; bottom: 0; width: var(--lateral); display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--line); z-index: 1000; }
+  #barra { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .titulo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .titulo h1 { margin: 0; font-size: 16px; font-weight: 700; }
+  .titulo h1 span { color: var(--brand); }
+  .buscador { position: relative; }
+  .buscador input { width: 100%; height: 42px; padding: 0 40px 0 38px; border: 1px solid var(--line); border-radius: 11px; background: #f8fbfa; outline: none; font-size: 15px; }
+  .buscador input:focus { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 3px rgba(22, 122, 85, .15); }
+  .buscador .lupa { position: absolute; left: 12px; top: 11px; width: 18px; height: 18px; color: var(--ink-3); pointer-events: none; }
+  .buscador .limpiar { position: absolute; right: 4px; top: 4px; width: 34px; height: 34px; border: 0; background: none; color: var(--ink-3); font-size: 18px; border-radius: 8px; display: none; }
+  .buscador.con-texto .limpiar { display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 11px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-size: 13px; font-weight: 600; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .chip i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .chip[aria-pressed="true"] { color: #fff; border-color: transparent; background: var(--c, var(--brand)); }
+  .chip[aria-pressed="true"] i { background: #fff !important; }
+  #hoja { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); }
+  .asa { display: none; }
+  #contenido { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 14px 16px 24px; -webkit-overflow-scrolling: touch; }
+
+  /* ---------------------------------------------------------------- tarjetas */
+  .cab { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .cab .marca { width: 6px; align-self: stretch; border-radius: 4px; background: var(--c, var(--brand)); flex: none; }
+  .cab h2 { margin: 0; font-size: 18px; line-height: 1.2; }
+  .cab p { margin: 2px 0 0; color: var(--ink-3); font-size: 12.5px; }
+  .volver { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 10px; padding: 4px 8px 4px 4px; border: 0; background: none; color: var(--brand); font-weight: 600; font-size: 13px; border-radius: 8px; }
+  .volver:hover { background: var(--brand-suave); }
+  .cifras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .cifras div { padding: 10px 8px; border: 1px solid var(--line); border-radius: 12px; background: #f8fbfa; text-align: center; }
+  .cifras b { display: block; font-size: 19px; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .cifras span { font-size: 11px; color: var(--ink-3); }
+  .seccion { margin: 16px 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+  .barras { display: flex; flex-direction: column; gap: 6px; }
+  .barra-fila { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 13px; }
+  .barra-fila .pista { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: #edf2f0; overflow: hidden; }
+  .barra-fila .pista i { display: block; height: 100%; border-radius: 3px; background: var(--c, var(--brand)); }
+  .barra-fila b { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-2); }
+  .lista { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .lista li + li { border-top: 1px solid #eef2f4; }
+  .lista button { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 2px 10px; width: 100%; padding: 10px 12px; border: 0; background: #fff; text-align: left; }
+  .lista button:hover, .lista button:focus-visible { background: #f5faf8; outline: none; }
+  .lista .punto { width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--brand)); }
+  .lista .t { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lista .s { grid-column: 2; font-size: 12px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lista .n { grid-row: 1 / span 2; grid-column: 3; text-align: right; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .lista .n b { display: block; font-size: 13px; color: var(--ink); }
+  .lista .activo { background: #fffbe6; }
+  .filtro-lista { width: 100%; height: 36px; margin: 0 0 8px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; background: #f8fbfa; outline: none; }
+  .filtro-lista:focus { border-color: var(--brand); background: #fff; }
+  .mas { display: block; width: 100%; margin-top: 8px; padding: 8px; border: 0; border-radius: 9px; background: var(--brand-suave); color: var(--brand); font-weight: 600; font-size: 13px; }
+  .acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0 4px; }
+  .acciones .ancho { grid-column: 1 / -1; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 8px 12px; border: 0; border-radius: 11px; background: var(--brand); color: #fff; font-weight: 650; font-size: 13.5px; text-decoration: none; text-align: center; }
+  .btn:hover { background: var(--brand-2); }
+  .btn.sec { background: var(--brand-suave); color: var(--brand); }
+  .btn.sec:hover { background: #d3ebe0; }
+  .vacio { padding: 18px 8px; text-align: center; color: var(--ink-3); }
+
+  /* ficha del lote */
+  .ficha-cab { margin: 0 -16px 12px; padding: 14px 16px 12px; background: linear-gradient(0deg, #fff, color-mix(in srgb, var(--c, #167a55) 12%, #fff)); border-top: 4px solid var(--c, var(--brand)); }
+  .ficha-cab .etq { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--c, var(--brand)); color: #fff; font-size: 12px; font-weight: 700; }
+  .ficha-cab h2 { margin: 8px 0 0; font-size: 22px; letter-spacing: .01em; }
+  .ficha-cab p { margin: 2px 0 0; color: var(--ink-2); font-size: 14px; }
+  .datos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dato { padding: 9px 11px; border: 1px solid var(--line); border-radius: 11px; }
+  .dato span { display: block; font-size: 11px; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .dato b { display: block; font-size: 14px; font-weight: 600; margin-top: 1px; overflow-wrap: anywhere; }
+  .texto { margin: 0; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+  .texto.suave { color: var(--ink-2); font-size: 13px; }
+  .copiar { margin-left: 6px; padding: 1px 8px; border: 1px solid var(--line); border-radius: 7px; background: #fff; font-size: 11.5px; color: var(--brand); font-weight: 600; }
+
+  /* ---------------------------------------------------------------- controles del mapa */
+  #botones { position: fixed; right: 12px; top: 12px; z-index: 900; display: flex; flex-direction: column; gap: 8px; }
+  #botones button { width: 44px; height: 44px; border: 0; border-radius: 12px; background: #fff; box-shadow: var(--sombra); display: grid; place-items: center; color: var(--ink); }
+  #botones button:hover { color: var(--brand); }
+  #botones button.activo { background: var(--brand); color: #fff; }
+  #botones svg { width: 22px; height: 22px; }
+  .leaflet-control-zoom { border: 0 !important; box-shadow: var(--sombra) !important; border-radius: 12px !important; overflow: hidden; }
+  .leaflet-control-zoom a { width: 44px !important; height: 44px !important; line-height: 44px !important; font-size: 20px !important; }
+  .marcador-yo { width: 18px; height: 18px; border-radius: 50%; background: #2563eb; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(37, 99, 235, .25); }
+  .marcador-punto { width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #d92d20; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+
+  /* ---------------------------------------------------------------- carga, avisos */
+  #carga { position: fixed; inset: 0 0 0 var(--lateral); z-index: 950; display: grid; place-items: center; background: rgba(243, 246, 245, .75); backdrop-filter: blur(2px); transition: opacity .25s; }
+  #carga.oculto { opacity: 0; pointer-events: none; }
+  #carga div { padding: 16px 20px; border-radius: 14px; background: #fff; box-shadow: var(--sombra); display: flex; align-items: center; gap: 12px; font-weight: 600; }
+  #carga div::before { content: ""; width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--brand-suave); border-top-color: var(--brand); animation: girar .8s linear infinite; }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  #aviso { position: fixed; left: calc(var(--lateral) + (100% - var(--lateral)) / 2); bottom: 24px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 3000; max-width: min(92vw, 420px); padding: 10px 16px; border-radius: 11px; background: #1f2937; color: #fff; font-size: 13px; transition: .2s; }
+  #aviso.visible { opacity: 1; transform: translate(-50%, 0); }
+  #nuevo { position: fixed; top: 12px; left: calc(var(--lateral) + (100% - var(--lateral)) / 2); transform: translateX(-50%); z-index: 3000; display: none; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 12px; background: #1f2937; color: #fff; font-size: 13px; box-shadow: var(--sombra); }
+  #nuevo.visible { display: flex; }
+  #nuevo button { border: 0; border-radius: 8px; padding: 6px 12px; background: #34d399; color: #064e3b; font-weight: 700; }
+  .estado-guardado { margin-top: 8px; font-size: 11.5px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
+  .estado-guardado i { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+  .estado-guardado.ok i { background: #16a34a; }
+
+  /* ---------------------------------------------------------------- celular */
+  @media (max-width: 760px) {
+    :root { --lateral: 0px; }
+    #mapa, #carga { inset: 0; }
+    #lateral { display: contents; }
+    #barra { position: fixed; z-index: 1000; top: calc(var(--arriba) + 8px); left: 8px; right: 8px; padding: 8px; border: 0; border-radius: 16px; box-shadow: var(--sombra); }
+    .titulo { display: none; }
+    .buscador input { height: 44px; font-size: 16px; }
+    .chips { flex-wrap: nowrap; overflow-x: auto; margin: 8px -8px 0; padding: 0 8px 2px; scrollbar-width: none; scroll-snap-type: x proximity; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { height: 34px; scroll-snap-align: start; }
+    #botones { top: calc(var(--arriba) + 124px); right: 10px; }
+    .leaflet-control-zoom { display: none; }
+    #hoja { position: fixed; z-index: 1100; left: 0; right: 0; bottom: 0; height: calc(100vh - 124px); height: calc(100dvh - var(--arriba) - 124px); border-radius: 18px 18px 0 0; box-shadow: 0 -8px 30px rgba(15, 45, 35, .22); transition: transform .28s cubic-bezier(.2, .8, .2, 1); transform: translateY(calc(100% - 46vh)); transform: translateY(calc(100% - 46dvh)); }
+    #hoja[data-estado="min"] { transform: translateY(calc(100% - 92px - var(--abajo))); }
+    #hoja[data-estado="max"] { transform: translateY(0); }
+    #hoja.arrastrando { transition: none; }
+    .asa { display: block; width: 100%; height: 26px; border: 0; background: none; padding: 0; flex: none; touch-action: none; }
+    .asa::before { content: ""; display: block; width: 42px; height: 5px; margin: 8px auto 0; border-radius: 3px; background: #cbd5e1; }
+    #contenido { padding: 2px 16px calc(24px + var(--abajo)); }
+    #hoja[data-estado="min"] #contenido { overflow: hidden; }
+    .ficha-cab { margin-top: -2px; }
+    #aviso { left: 50%; bottom: calc(110px + var(--abajo)); }
+    #nuevo { left: 50%; top: calc(var(--arriba) + 124px); }
+  }
+</style>
+</head>
+<body>
+<div id="mapa" aria-label="Mapa de lotes"></div>
+
+<aside id="lateral">
+  <div id="barra">
+    <div class="titulo">
+      <h1>Microrrutas <span>· mapa rápido</span></h1>
+    </div>
+    <div class="buscador" id="buscador">
+      <svg class="lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="buscar" type="search" autocomplete="off" enterkeyhint="search" placeholder="Microrruta, lote, dirección o coordenadas" aria-label="Buscar">
+      <button type="button" class="limpiar" id="limpiar" aria-label="Borrar búsqueda">✕</button>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filtrar por cuadrilla"></div>
+  </div>
+  <section id="hoja" data-estado="min" aria-label="Información">
+    <button type="button" class="asa" id="asa" aria-label="Expandir o contraer"></button>
+    <div id="contenido"></div>
+  </section>
+</aside>
+
+<div id="botones">
+  <button type="button" id="btn-gps" title="¿Qué lote es aquí? (GPS)" aria-label="Mi ubicación">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
+  </button>
+  <button type="button" id="btn-fondo" title="Cambiar fondo: satélite / calles" aria-label="Cambiar fondo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></svg>
+  </button>
+  <button type="button" id="btn-todo" title="Ver todo lo filtrado" aria-label="Ver todo lo filtrado">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+</div>
+
+<div id="carga"><div id="carga-texto">Cargando lotes…</div></div>
+<div id="nuevo" role="status"><span>Hay datos nuevos de los lotes</span><button type="button" onclick="location.reload()">Actualizar</button></div>
+<div id="aviso" role="status"></div>
+
+<script src="js/leaflet.js"></script>
+<script>
+(function () {
+  'use strict';
+  // ------------------------------------------------------------------ utilidades
+  var PALETA = ['#2563eb', '#16a34a', '#dc2626', '#9333ea', '#ea580c', '#0891b2', '#db2777', '#65a30d', '#ca8a04', '#0f766e', '#7c3aed', '#b45309'];
+  var SIN = '#64748b';
+  var esCelular = window.matchMedia('(max-width: 760px)');
+  var tactil = window.matchMedia('(pointer: coarse)').matches;
+  function $(id) { return document.getElementById(id); }
+  function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function fmt(n) { return Math.round(n || 0).toLocaleString('es-CO'); }
+  function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(); }
+  function colorQ(q) { var n = parseInt(q, 10); return isFinite(n) ? PALETA[(n - 1 + PALETA.length) % PALETA.length] : SIN; }
+  function nombreQ(q) { return q ? 'Cuadrilla ' + q : 'Sin cuadrilla'; }
+  function leer(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function guardar(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function aviso(t, ms) {
+    var el = $('aviso'); el.textContent = t; el.classList.add('visible');
+    clearTimeout(el._t); el._t = setTimeout(function () { el.classList.remove('visible'); }, ms || 3000);
+  }
+  function cargarScript(src) {
+    return new Promise(function (ok, mal) {
+      var s = document.createElement('script');
+      s.src = src; s.onload = ok; s.onerror = function () { mal(new Error('No se pudo cargar ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function distanciaM(a, b, c, d) {
+    var R = 6371000, r = Math.PI / 180, x = (d - b) * r * Math.cos((a + c) / 2 * r), y = (c - a) * r;
+    return Math.sqrt(x * x + y * y) * R;
+  }
+
+  // ------------------------------------------------------------------ mapa
+  var vista = leer('rapido_vista', null);
+  var map = L.map('mapa', { zoomControl: false, preferCanvas: true, maxZoom: 21, minZoom: 10, tapTolerance: 20 });
+  if (vista) map.setView(vista.c, vista.z); else map.fitBounds([[6.1634, -75.6357], [6.3365, -75.5022]]);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  map.attributionControl.setPrefix('Leaflet');
+  var fondos = {
+    satelite: L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains: '0123', maxNativeZoom: 20, maxZoom: 21, crossOrigin: 'anonymous', attribution: 'Imágenes © Google' }),
+    calles: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxNativeZoom: 19, maxZoom: 21, crossOrigin: 'anonymous', attribution: '© OpenStreetMap' })
+  };
+  var fondo = leer('rapido_fondo', 'satelite');
+  if (!fondos[fondo]) fondo = 'satelite';
+  fondos[fondo].addTo(map);
+  $('btn-fondo').onclick = function () {
+    map.removeLayer(fondos[fondo]);
+    fondo = fondo === 'satelite' ? 'calles' : 'satelite';
+    fondos[fondo].addTo(map);
+    guardar('rapido_fondo', fondo);
+    aviso(fondo === 'satelite' ? 'Fondo: satélite' : 'Fondo: calles', 1500);
+    recolorear();
+  };
+  map.on('moveend', function () { var c = map.getCenter(); guardar('rapido_vista', { c: [c.lat, c.lng], z: map.getZoom() }); });
+  var lienzo = L.canvas({ padding: 0.4, tolerance: tactil ? 6 : 2 });
+  var grupo = L.featureGroup().addTo(map);
+  var capaResalte = L.layerGroup().addTo(map);
+
+  // ------------------------------------------------------------------ estado
+  var lotes = [], porId = {}, porMr = {}, cuadrillas = [];
+  var seleccion = leer('rapido_cuadrillas', []);    // [] = todas
+  var visibles = [];
+  var actual = null;                                // lote abierto
+  var pila = [];                                    // vistas anteriores (para "volver")
+  var textosListos = false;
+
+  function estilo(l) {
+    var c = colorQ(l.q), claro = fondo === 'calles';
+    return { renderer: lienzo, color: c, weight: claro ? 1.2 : 1.5, opacity: 0.95, fillColor: c, fillOpacity: claro ? 0.45 : 0.55, bubblingMouseEvents: false };
+  }
+  function recolorear() { lotes.forEach(function (l) { l.capa.setStyle(estilo(l)); }); }
+
+  // ------------------------------------------------------------------ carga de datos (en tandas para no congelar el celular)
+  function decodificar(g, k) {
+    return g.map(function (pol) {
+      return pol.map(function (plano) {
+        var x = 0, y = 0, out = new Array(plano.length / 2);
+        for (var i = 0, j = 0; i < plano.length; i += 2, j++) { x += plano[i]; y += plano[i + 1]; out[j] = [y / k, x / k]; }
+        return out;
+      });
+    });
+  }
+  function construir(datos) {
+    var crudos = datos.lotes, k = datos.escala, i = 0, conteo = {};
+    return new Promise(function (ok) {
+      function tanda() {
+        var fin = Math.min(i + 1200, crudos.length);
+        for (; i < fin; i++) {
+          var r = crudos[i];
+          var l = { id: r.i, m: r.m || '', lt: r.l || '', q: r.q || '', a: r.a || 0, z: r.z || '', c: r.c || '', f: r.f || 'Sin programación', d: '', s: '' };
+          l.geo = decodificar(r.g, k);
+          l.capa = L.polygon(l.geo, estilo(l));
+          l.capa.lote = l;
+          l.capa.on('click', alTocarLote);
+          lotes.push(l); porId[l.id] = l;
+          if (l.m) (porMr[l.m] = porMr[l.m] || []).push(l);
+          conteo[l.q] = (conteo[l.q] || 0) + 1;
+        }
+        $('carga-texto').textContent = 'Cargando lotes… ' + Math.round(i / crudos.length * 100) + ' %';
+        if (i < crudos.length) requestAnimationFrame(tanda);
+        else {
+          cuadrillas = Object.keys(conteo).sort(function (a, b) { return (parseInt(a, 10) || 999) - (parseInt(b, 10) || 999); })
+            .map(function (q) { return { q: q, n: conteo[q] }; });
+          ok();
+        }
+      }
+      tanda();
+    });
+  }
+  function centro(l) {
+    if (l.cen) return l.cen;
+    var b = l.capa.getBounds(), c = b.getCenter();
+    return (l.cen = [c.lat, c.lng]);
+  }
+  function areaAnillo(r) { var s = 0; for (var i = 0, j = r.length - 1; i < r.length; j = i++) s += (r[j][1] + r[i][1]) * (r[j][0] - r[i][0]); return Math.abs(s / 2); }
+  function dentroAnillo(lat, lon, r) {
+    var d = false;
+    for (var i = 0, j = r.length - 1; i < r.length; j = i++) {
+      if ((r[i][0] > lat) !== (r[j][0] > lat) && lon < (r[j][1] - r[i][1]) * (lat - r[i][0]) / (r[j][0] - r[i][0]) + r[i][1]) d = !d;
+    }
+    return d;
+  }
+  function contiene(l, lat, lon) {
+    if (!l.capa.getBounds().contains([lat, lon])) return false;
+    return l.geo.some(function (pol) { return dentroAnillo(lat, lon, pol[0]) && !pol.slice(1).some(function (h) { return dentroAnillo(lat, lon, h); }); });
+  }
+  // Punto para "cómo llegar": el centro si cae dentro del lote; si no, un vértice de la parte más grande
+  function puntoLlegada(l) {
+    var c = centro(l);
+    if (contiene(l, c[0], c[1])) return c;
+    var mayor = null, am = -1;
+    l.geo.forEach(function (pol) { var a = areaAnillo(pol[0]); if (a > am) { am = a; mayor = pol[0]; } });
+    var mejor = mayor[0], dm = Infinity;
+    mayor.forEach(function (v) { var d = distanciaM(c[0], c[1], v[0], v[1]); if (d < dm) { dm = d; mejor = v; } });
+    return mejor;
+  }
+
+  // ------------------------------------------------------------------ filtro por cuadrilla
+  function pasa(l) { return !seleccion.length || seleccion.indexOf(l.q) !== -1; }
+  function aplicarFiltro(ajustar) {
+    grupo.clearLayers();
+    visibles = lotes.filter(pasa);
+    visibles.forEach(function (l) { grupo.addLayer(l.capa); });
+    pintarChips();
+    if (ajustar && visibles.length) map.fitBounds(grupo.getBounds(), { padding: [30, 30], maxZoom: 17 });
+  }
+  function pintarChips() {
+    var todas = !seleccion.length;
+    $('chips').innerHTML = '<button type="button" class="chip" data-q="*" aria-pressed="' + todas + '">Todas</button>' +
+      cuadrillas.map(function (c) {
+        var on = seleccion.indexOf(c.q) !== -1, col = colorQ(c.q);
+        return '<button type="button" class="chip" data-q="' + esc(c.q) + '" aria-pressed="' + on + '" style="--c:' + col + '" title="' + esc(nombreQ(c.q)) + ' · ' + fmt(c.n) + ' lotes">' +
+          '<i style="background:' + col + '"></i>' + (c.q ? esc(c.q) : 'Sin') + '</button>';
+      }).join('');
+  }
+  $('chips').addEventListener('click', function (e) {
+    var b = e.target.closest('.chip');
+    if (!b) return;
+    var q = b.getAttribute('data-q');
+    if (q === '*') seleccion = [];
+    else if (e.ctrlKey || e.metaKey || e.shiftKey) {   // en PC: Ctrl + clic para varias
+      var i = seleccion.indexOf(q);
+      if (i === -1) seleccion.push(q); else seleccion.splice(i, 1);
+    } else seleccion = (seleccion.length === 1 && seleccion[0] === q) ? [] : [q];
+    guardar('rapido_cuadrillas', seleccion);
+    $('buscar').value = ''; $('buscador').classList.remove('con-texto');
+    limpiarResalte();
+    aplicarFiltro(true);
+    pila = [];
+    mostrar(vistaResumen, esCelular.matches ? 'min' : null);
+  });
+
+  // ------------------------------------------------------------------ resaltado
+  function limpiarResalte() { capaResalte.clearLayers(); actual = null; }
+  function resaltar(lista, principal) {
+    capaResalte.clearLayers();
+    lista.forEach(function (l) {
+      if (l === principal) return;
+      L.polygon(l.geo, { renderer: lienzo, interactive: false, color: '#facc15', weight: 3, opacity: 1, fillColor: '#facc15', fillOpacity: 0.25, dashArray: '6 5' }).addTo(capaResalte);
+    });
+    if (principal) {
+      L.polygon(principal.geo, { renderer: lienzo, interactive: false, color: '#111827', weight: 5, opacity: 0.55, fill: false }).addTo(capaResalte);
+      L.polygon(principal.geo, { renderer: lienzo, interactive: false, color: '#facc15', weight: 3, opacity: 1, fillColor: '#facc15', fillOpacity: 0.45 }).addTo(capaResalte);
+    }
+  }
+  function encuadrar(lista, maxZoom) {
+    if (!lista.length) return;
+    var b = L.latLngBounds([]);
+    lista.forEach(function (l) { b.extend(l.capa.getBounds()); });
+    var pad = esCelular.matches ? { paddingTopLeft: [20, 140], paddingBottomRight: [20, window.innerHeight * 0.48] } : { padding: [40, 40] };
+    map.fitBounds(b, L.extend(pad, { maxZoom: maxZoom || 18 }));
+  }
+
+  // ------------------------------------------------------------------ hoja / panel
+  var hoja = $('hoja'), contenido = $('contenido');
+  function estadoHoja(e) { if (esCelular.matches) hoja.setAttribute('data-estado', e); }
+  var vistaActual = null;
+  function mostrar(fn, estado) {
+    vistaActual = fn;
+    contenido.innerHTML = fn();
+    contenido.scrollTop = 0;
+    if (estado) estadoHoja(estado);
+  }
+  function ir(fn, estado) { if (vistaActual) pila.push(vistaActual); mostrar(fn, estado); }
+  function volver() {
+    var fn = pila.pop() || vistaResumen;
+    if (fn === vistaResumen) { limpiarResalte(); }
+    mostrar(fn);
+  }
+  function botonVolver() {
+    return '<button type="button" class="volver" data-accion="volver">‹ Volver</button>';
+  }
+  // Asa del celular: tocar alterna; arrastrar sube o baja
+  (function () {
+    var asa = $('asa'), y0 = null, t0 = 0, base = 0;
+    var orden = ['min', 'media', 'max'];
+    function desplazamiento() { var t = getComputedStyle(hoja).transform; return t && t !== 'none' ? new DOMMatrixReadOnly(t).m42 : 0; }
+    function inicio(y) { y0 = y; t0 = Date.now(); base = desplazamiento(); hoja.classList.add('arrastrando'); }
+    function mover(y) { if (y0 === null) return; hoja.style.transform = 'translateY(' + Math.max(0, base + y - y0) + 'px)'; }
+    function fin(y) {
+      if (y0 === null) return;
+      var dy = y - y0, est = hoja.getAttribute('data-estado'), i = orden.indexOf(est);
+      hoja.classList.remove('arrastrando'); hoja.style.transform = '';
+      if (Math.abs(dy) < 8 && Date.now() - t0 < 300) estadoHoja(est === 'min' ? 'media' : est === 'media' ? 'max' : 'min');
+      else if (dy < -40) estadoHoja(orden[Math.min(2, i + (dy < -260 ? 2 : 1))]);
+      else if (dy > 40) estadoHoja(orden[Math.max(0, i - (dy > 260 ? 2 : 1))]);
+      y0 = null;
+    }
+    asa.addEventListener('pointerdown', function (e) { asa.setPointerCapture(e.pointerId); inicio(e.clientY); });
+    asa.addEventListener('pointermove', function (e) { mover(e.clientY); });
+    asa.addEventListener('pointerup', function (e) { fin(e.clientY); });
+    asa.addEventListener('pointercancel', function () { y0 = null; hoja.classList.remove('arrastrando'); hoja.style.transform = ''; });
+    // Tocar la cabecera de la hoja cuando está abajo la sube
+    contenido.addEventListener('click', function (e) {
+      if (esCelular.matches && hoja.getAttribute('data-estado') === 'min' && !e.target.closest('button,a,input')) estadoHoja('media');
+    });
+  })();
+  map.on('click', function () { if (esCelular.matches) estadoHoja('min'); });
+
+  // ------------------------------------------------------------------ resumen de cuadrilla(s)
+  function agrupar(lista) {
+    var r = { lotes: lista.length, m2: 0, mrs: {}, frec: {}, comunas: {}, zonas: {} };
+    lista.forEach(function (l) {
+      r.m2 += l.a;
+      if (l.m) { var g = r.mrs[l.m] = r.mrs[l.m] || { m: l.m, n: 0, a: 0, q: l.q, f: l.f, c: l.c }; g.n++; g.a += l.a; }
+      r.frec[l.f] = (r.frec[l.f] || 0) + 1;
+      var com = l.c ? l.c.split('–').pop().trim() : 'Sin comuna';
+      r.comunas[com] = (r.comunas[com] || 0) + 1;
+      if (l.z) r.zonas[l.z] = 1;
+    });
+    r.listaMrs = Object.keys(r.mrs).sort().map(function (k) { return r.mrs[k]; });
+    return r;
+  }
+  function barras(obj, total, color, max) {
+    var filas = Object.keys(obj).map(function (k) { return [k, obj[k]]; }).sort(function (a, b) { return b[1] - a[1]; });
+    var resto = filas.slice(max || 99);
+    filas = filas.slice(0, max || 99);
+    if (resto.length) filas.push(['Otras ' + resto.length, resto.reduce(function (s, x) { return s + x[1]; }, 0)]);
+    return '<div class="barras">' + filas.map(function (f) {
+      return '<div class="barra-fila" style="--c:' + color + '"><span>' + esc(f[0]) + '</span><b>' + fmt(f[1]) + '</b><div class="pista"><i style="width:' + Math.max(2, f[1] / total * 100).toFixed(1) + '%"></i></div></div>';
+    }).join('') + '</div>';
+  }
+  var limiteMrs = 40;
+  function vistaResumen() {
+    var todas = !seleccion.length, r = agrupar(visibles);
+    var col = seleccion.length === 1 ? colorQ(seleccion[0]) : 'var(--brand)';
+    var titulo = todas ? 'Todas las cuadrillas' : seleccion.length === 1 ? nombreQ(seleccion[0]) : 'Cuadrillas ' + seleccion.join(', ');
+    var html = '<div class="cab" style="--c:' + col + '"><div class="marca"></div><div><h2>' + esc(titulo) + '</h2><p>' +
+      fmt(r.lotes) + ' lotes · ' + fmt(r.listaMrs.length) + ' microrrutas · ' + fmt(r.m2) + ' m²</p></div></div>';
+    html += '<div class="cifras"><div><b>' + fmt(r.lotes) + '</b><span>lotes</span></div><div><b>' + fmt(r.listaMrs.length) + '</b><span>microrrutas</span></div><div><b>' +
+      (r.m2 >= 1e6 ? (r.m2 / 1e6).toLocaleString('es-CO', { maximumFractionDigits: 2 }) + ' M' : fmt(r.m2)) + '</b><span>m² de zona verde</span></div></div>';
+    if (todas) {
+      var porQ = {};
+      lotes.forEach(function (l) { var g = porQ[l.q] = porQ[l.q] || { n: 0, a: 0, m: {} }; g.n++; g.a += l.a; if (l.m) g.m[l.m] = 1; });
+      html += '<div class="seccion">Cuadrillas — toque una para filtrar</div><ul class="lista">' + cuadrillas.map(function (c) {
+        var g = porQ[c.q];
+        return '<li><button type="button" data-cuadrilla="' + esc(c.q) + '" style="--c:' + colorQ(c.q) + '"><span class="punto"></span><span class="t">' + esc(nombreQ(c.q)) + '</span>' +
+          '<span class="n"><b>' + fmt(g.n) + ' lotes</b>' + fmt(g.a) + ' m²</span><span class="s">' + fmt(Object.keys(g.m).length) + ' microrrutas</span></button></li>';
+      }).join('') + '</ul>';
+    } else {
+      html += '<div class="seccion">Frecuencia</div>' + barras(r.frec, r.lotes, col);
+      html += '<div class="seccion">Comunas</div>' + barras(r.comunas, r.lotes, col, 6);
+      html += '<div class="seccion">Microrrutas (' + r.listaMrs.length + ')</div>' +
+        (r.listaMrs.length > 8 ? '<input class="filtro-lista" id="filtro-mrs" type="search" placeholder="Filtrar microrrutas…" autocomplete="off">' : '') +
+        '<ul class="lista" id="lista-mrs">' + filasMrs(r.listaMrs, '') + '</ul>';
+    }
+    html += '<div class="acciones"><button type="button" class="btn sec" data-accion="encuadrar">Ver en el mapa</button>' +
+      '<button type="button" class="btn sec" data-accion="csv">Descargar Excel</button></div>';
+    html += '<div class="estado-guardado" id="estado-guardado"></div>';
+    setTimeout(pintarEstadoGuardado, 0);
+    return html;
+  }
+  function filasMrs(lista, filtro) {
+    var f = norm(filtro), todos = lista.filter(function (g) { return !f || norm(g.m + ' ' + g.c).indexOf(f) !== -1; });
+    var parte = todos.slice(0, limiteMrs);
+    if (!parte.length) return '<li class="vacio">Sin coincidencias</li>';
+    return parte.map(function (g) {
+      return '<li><button type="button" data-mr="' + esc(g.m) + '" style="--c:' + colorQ(g.q) + '"><span class="punto"></span><span class="t">' + esc(g.m) + '</span>' +
+        '<span class="n"><b>' + fmt(g.n) + (g.n === 1 ? ' lote' : ' lotes') + '</b>' + fmt(g.a) + ' m²</span><span class="s">' + esc(g.f) + (g.c ? ' · ' + esc(g.c.split('–').pop().trim()) : '') + '</span></button></li>';
+    }).join('') + (todos.length > parte.length ? '<li><button type="button" class="mas" data-accion="mas-mrs">Ver ' + (todos.length - parte.length) + ' más</button></li>' : '');
+  }
+  contenido.addEventListener('input', function (e) {
+    if (e.target.id === 'filtro-mrs') { limiteMrs = 40; $('lista-mrs').innerHTML = filasMrs(agrupar(visibles).listaMrs, e.target.value); }
+  });
+
+  // ------------------------------------------------------------------ microrruta
+  function vistaMicrorruta(m) {
+    return function () {
+      var lista = (porMr[m] || []).slice().sort(function (a, b) { return (parseInt(a.lt, 10) || 0) - (parseInt(b.lt, 10) || 0); });
+      var r = agrupar(lista), l0 = lista[0] || {}, col = colorQ(l0.q);
+      var html = botonVolver() + '<div class="cab" style="--c:' + col + '"><div class="marca"></div><div><h2>' + esc(m) + '</h2><p>' + esc(nombreQ(l0.q)) + ' · ' + esc(l0.f || '') +
+        (l0.c ? ' · ' + esc(l0.c) : '') + '</p></div></div>';
+      html += '<div class="cifras"><div><b>' + fmt(lista.length) + '</b><span>lotes</span></div><div><b>' + fmt(r.m2) + '</b><span>m²</span></div><div><b>' + esc(l0.z || '—') + '</b><span>zona</span></div></div>';
+      var t = textos(l0);
+      if (t.d) html += '<div class="seccion">Dirección</div><p class="texto">' + esc(t.d) + '</p>';
+      html += '<div class="seccion">Lotes</div><ul class="lista">' + lista.map(function (l) {
+        var tl = textos(l);
+        return '<li><button type="button" data-lote="' + l.id + '" style="--c:' + col + '"' + (l === actual ? ' class="activo"' : '') + '><span class="punto"></span><span class="t">Lote ' + esc(l.lt || 'sin número') + '</span>' +
+          '<span class="n"><b>' + fmt(l.a) + ' m²</b></span><span class="s">' + esc(tl.s || tl.d || '') + '</span></button></li>';
+      }).join('') + '</ul>';
+      html += '<div class="acciones"><button type="button" class="btn sec ancho" data-accion="csv-mr" data-mr="' + esc(m) + '">Descargar Excel de la microrruta</button></div>';
+      return html;
+    };
+  }
+  function abrirMicrorruta(m) {
+    var lista = porMr[m] || [];
+    resaltar(lista, null);
+    encuadrar(lista, 18);
+    ir(vistaMicrorruta(m), 'media');
+  }
+
+  // ------------------------------------------------------------------ ficha del lote
+  function textos(l) {
+    if (!textosListos) return { d: '', s: '' };
+    var t = window.TEXTOS_RAPIDO[l.id];
+    return t ? { d: t[0], s: t[1] } : { d: '', s: '' };
+  }
+  function vistaLote(l) {
+    return function () {
+      var col = colorQ(l.q), t = textos(l), p = puntoLlegada(l), ll = p[0].toFixed(6) + ',' + p[1].toFixed(6);
+      var hermanos = l.m ? porMr[l.m] || [] : [];
+      var html = (pila.length ? botonVolver() : '') +
+        '<div class="ficha-cab" style="--c:' + col + '"><span class="etq">' + esc(nombreQ(l.q)) + '</span>' +
+        '<h2>' + esc(l.m || 'Sin microrruta') + '</h2><p>Lote <b>' + esc(l.lt || 'sin número') + '</b>' + (l.a ? ' · ' + fmt(l.a) + ' m²' : '') + '</p></div>';
+      html += '<div class="datos">' +
+        '<div class="dato"><span>Zona</span><b>' + esc(l.z || '—') + '</b></div>' +
+        '<div class="dato"><span>Frecuencia</span><b>' + esc(l.f) + '</b></div>' +
+        '<div class="dato" style="grid-column:1/-1"><span>Comuna</span><b>' + esc(l.c || '—') + '</b></div></div>';
+      if (t.d) html += '<div class="seccion">Dirección <button type="button" class="copiar" data-copiar="' + esc(t.d) + '">Copiar</button></div><p class="texto">' + esc(t.d) + '</p>';
+      if (t.s && t.s !== t.d) html += '<div class="seccion">Descripción</div><p class="texto suave">' + esc(t.s) + '</p>';
+      if (!textosListos) html += '<p class="texto suave">Cargando dirección…</p>';
+      html += '<div class="acciones">' +
+        '<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=' + ll + '" target="_blank" rel="noopener">Cómo llegar</a>' +
+        '<a class="btn sec" href="https://waze.com/ul?ll=' + ll + '&navigate=yes" target="_blank" rel="noopener">Waze</a>' +
+        '<a class="btn sec" href="https://www.google.com/maps/search/?api=1&query=' + ll + '" target="_blank" rel="noopener">Ver en Google Maps</a>' +
+        '<button type="button" class="btn sec" data-copiar="' + ll + '">Copiar coordenadas</button>' +
+        (hermanos.length > 1 ? '<button type="button" class="btn sec ancho" data-mr="' + esc(l.m) + '">Ver toda la microrruta (' + hermanos.length + ' lotes)</button>' : '') +
+        '</div>';
+      return html;
+    };
+  }
+  function abrirLote(l, desdeMapa) {
+    actual = l;
+    resaltar(l.m ? porMr[l.m] || [l] : [l], l);
+    if (!desdeMapa) encuadrar([l], 19);
+    var fn = vistaLote(l); fn.esLote = true;
+    // tocar otro lote con una ficha abierta la reemplaza (no se acumulan en "volver")
+    if (vistaActual && vistaActual.esLote) mostrar(fn, 'media'); else ir(fn, 'media');
+  }
+  function alTocarLote(e) { abrirLote(e.target.lote, true); }
+
+  // ------------------------------------------------------------------ clics dentro del panel
+  contenido.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-accion],[data-cuadrilla],[data-mr],[data-lote],[data-copiar],[data-ir]');
+    if (!b) return;
+    var acc = b.getAttribute('data-accion');
+    if (acc === 'volver') return volver();
+    if (acc === 'encuadrar') { encuadrar(visibles, 17); estadoHoja('min'); return; }
+    if (acc === 'csv') return descargarCSV(visibles, seleccion.length ? 'cuadrilla_' + seleccion.join('_') : 'todas_las_cuadrillas');
+    if (acc === 'csv-mr') return descargarCSV(porMr[b.getAttribute('data-mr')] || [], 'microrruta_' + b.getAttribute('data-mr'));
+    if (acc === 'mas-mrs') { limiteMrs += 80; var f = $('filtro-mrs'); $('lista-mrs').innerHTML = filasMrs(agrupar(visibles).listaMrs, f ? f.value : ''); return; }
+    if (b.hasAttribute('data-copiar')) return copiar(b.getAttribute('data-copiar'));
+    if (b.hasAttribute('data-cuadrilla')) { var q = b.getAttribute('data-cuadrilla'); seleccion = [q]; guardar('rapido_cuadrillas', seleccion); aplicarFiltro(true); pila = []; mostrar(vistaResumen); return; }
+    if (b.hasAttribute('data-lote')) return abrirLote(porId[b.getAttribute('data-lote')]);
+    if (b.hasAttribute('data-ir')) { var p = b.getAttribute('data-ir').split(','); return puntoBuscado(+p[0], +p[1]); }
+    if (b.hasAttribute('data-mr')) return abrirMicrorruta(b.getAttribute('data-mr'));
+  });
+  function copiar(t) {
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { aviso('Copiado'); }, function () {
+      var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
+      try { document.execCommand('copy'); aviso('Copiado'); } catch (e) { aviso('No se pudo copiar'); }
+      a.remove();
+    });
+  }
+
+  // ------------------------------------------------------------------ Excel (CSV)
+  function descargarCSV(lista, nombre) {
+    if (!lista.length) return aviso('No hay lotes para descargar.');
+    var cab = ['Microrruta', 'Lote', 'Cuadrilla', 'Zona', 'Comuna', 'Area_m2', 'Frecuencia', 'Direccion', 'Descripcion', 'Latitud', 'Longitud'];
+    var celda = function (v) { v = String(v == null ? '' : v).replace(/\r?\n/g, ' '); return /[;"]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var filas = lista.map(function (l) { var t = textos(l), p = puntoLlegada(l); return [l.m, l.lt, l.q, l.z, l.c, Math.round(l.a), l.f, t.d, t.s, p[0].toFixed(6), p[1].toFixed(6)]; });
+    var txt = '﻿' + [cab].concat(filas).map(function (f) { return f.map(celda).join(';'); }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
+    a.download = nombre.replace(/[^\w-]+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  // ------------------------------------------------------------------ búsqueda
+  var marcador = null;
+  function coordenadasDe(t) {
+    var m = t.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || t.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || t.match(/[?&](?:q|query|ll|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/i) ||
+      t.match(/^\s*(-?\d{1,2}\.\d+)\s*[,; ]\s*(-?\d{2,3}\.\d+)\s*$/);
+    if (m) return [+m[1], +m[2]];
+    m = t.match(/^\s*(\d{1,2}\.\d+)\s*([NS])[\s,]+(\d{2,3}\.\d+)\s*([EW])\s*$/i);
+    if (m) return [(/s/i.test(m[2]) ? -1 : 1) * m[1], (/w/i.test(m[4]) ? -1 : 1) * m[3]];
+    return null;
+  }
+  function cercanos(lat, lon, lista, n) {
+    return lista.map(function (l) { var c = centro(l); return { l: l, d: distanciaM(lat, lon, c[0], c[1]) }; })
+      .sort(function (a, b) { return a.d - b.d; }).slice(0, n);
+  }
+  function puntoBuscado(lat, lon, titulo) {
+    if (marcador) map.removeLayer(marcador);
+    marcador = L.marker([lat, lon], { icon: L.divIcon({ className: '', html: '<div class="' + (titulo === 'yo' ? 'marcador-yo' : 'marcador-punto') + '"></div>', iconSize: [22, 22], iconAnchor: titulo === 'yo' ? [9, 9] : [11, 22] }), interactive: false }).addTo(map);
+    var donde = visibles.filter(function (l) { return contiene(l, lat, lon); })[0] || lotes.filter(function (l) { return contiene(l, lat, lon); })[0];
+    if (donde) { if (!pasa(donde)) aviso('Ese lote es de la ' + nombreQ(donde.q) + ' (fuera del filtro).', 4000); abrirLote(donde); return; }
+    map.setView([lat, lon], Math.max(map.getZoom(), 17));
+    var cerca = cercanos(lat, lon, visibles.length ? visibles : lotes, 5);
+    ir(function () {
+      return botonVolver() + '<div class="cab"><div class="marca"></div><div><h2>' + (titulo === 'yo' ? 'Usted está aquí' : 'Punto buscado') + '</h2><p>No cae dentro de ningún lote' +
+        (seleccion.length ? ' de la cuadrilla filtrada' : '') + '. Los más cercanos:</p></div></div><ul class="lista">' + cerca.map(function (x) {
+          return '<li><button type="button" data-lote="' + x.l.id + '" style="--c:' + colorQ(x.l.q) + '"><span class="punto"></span><span class="t">' + esc(x.l.m || 'Sin microrruta') + ' · lote ' + esc(x.l.lt || '—') + '</span>' +
+            '<span class="n"><b>' + fmt(x.d) + ' m</b></span><span class="s">' + esc(nombreQ(x.l.q)) + (textos(x.l).d ? ' · ' + esc(textos(x.l).d) : '') + '</span></button></li>';
+        }).join('') + '</ul>';
+    }, 'media');
+  }
+  function buscar(texto, enter) {
+    var t = texto.trim();
+    $('buscador').classList.toggle('con-texto', !!t);
+    if (!t) { if (vistaActual && vistaActual.esBusqueda) { pila = []; mostrar(vistaResumen); } return; }
+    var c = coordenadasDe(t);
+    if (c) { if (enter) { $('buscar').blur(); puntoBuscado(c[0], c[1]); } return; }
+    var f = norm(t), mrs = [], ls = [], dirs = [];
+    var exactoLote = /^\d+$/.test(t);
+    Object.keys(porMr).forEach(function (m) { if (norm(m).indexOf(f) !== -1) mrs.push(m); });
+    lotes.forEach(function (l) {
+      if (exactoLote ? l.lt === t : norm(l.lt) === f) ls.push(l);
+      else if (textosListos && f.length >= 3) { var tx = textos(l); if (norm(tx.d + ' ' + l.c).indexOf(f) !== -1) dirs.push(l); }
+    });
+    // primero lo de la cuadrilla filtrada
+    var orden = function (a, b) { return (pasa(b) ? 1 : 0) - (pasa(a) ? 1 : 0); };
+    ls.sort(orden); dirs.sort(orden);
+    mrs.sort(function (a, b) { return orden(porMr[a][0], porMr[b][0]) || (a < b ? -1 : 1); });
+    if (enter && mrs.length === 1 && !ls.length) { $('buscar').blur(); pila = [vistaResumen]; return abrirMicrorruta(mrs[0]); }
+    if (enter && ls.length === 1 && !mrs.length) { $('buscar').blur(); return abrirLote(ls[0]); }
+    var fn = function () {
+      var html = '<div class="cab"><div class="marca"></div><div><h2>Resultados</h2><p>«' + esc(t) + '»' + (seleccion.length ? ' · primero los de la cuadrilla filtrada' : '') + '</p></div></div>';
+      if (mrs.length) html += '<div class="seccion">Microrrutas (' + mrs.length + ')</div><ul class="lista">' + mrs.slice(0, 15).map(function (m) {
+        var g = porMr[m], a = g.reduce(function (s, l) { return s + l.a; }, 0);
+        return '<li><button type="button" data-mr="' + esc(m) + '" style="--c:' + colorQ(g[0].q) + '"><span class="punto"></span><span class="t">' + esc(m) + '</span><span class="n"><b>' + g.length + ' lotes</b>' + fmt(a) + ' m²</span><span class="s">' + esc(nombreQ(g[0].q)) + ' · ' + esc(g[0].f) + '</span></button></li>';
+      }).join('') + '</ul>';
+      function filasLotes(arr) {
+        return '<ul class="lista">' + arr.slice(0, 20).map(function (l) {
+          var tx = textos(l);
+          return '<li><button type="button" data-lote="' + l.id + '" style="--c:' + colorQ(l.q) + '"><span class="punto"></span><span class="t">Lote ' + esc(l.lt || '—') + ' · ' + esc(l.m || 'sin microrruta') + '</span><span class="n"><b>' + fmt(l.a) + ' m²</b></span><span class="s">' + esc(nombreQ(l.q)) + (tx.d ? ' · ' + esc(tx.d) : '') + '</span></button></li>';
+        }).join('') + '</ul>';
+      }
+      if (ls.length) html += '<div class="seccion">Lotes (' + ls.length + ')</div>' + filasLotes(ls);
+      if (dirs.length) html += '<div class="seccion">Por dirección o comuna (' + dirs.length + ')</div>' + filasLotes(dirs);
+      if (!mrs.length && !ls.length && !dirs.length) html += '<p class="vacio">Sin resultados. Pruebe con el código de la microrruta (Z5CC0026), el número de lote, una calle o pegue coordenadas / un link de Google Maps.</p>';
+      return html;
+    };
+    fn.esBusqueda = true;
+    pila = [vistaResumen];
+    mostrar(fn, 'media');
+  }
+  var esperaBusqueda;
+  $('buscar').addEventListener('input', function (e) { clearTimeout(esperaBusqueda); esperaBusqueda = setTimeout(function () { buscar(e.target.value, false); }, 220); });
+  $('buscar').addEventListener('keydown', function (e) { if (e.key === 'Enter') { clearTimeout(esperaBusqueda); buscar(e.target.value, true); } });
+  $('limpiar').onclick = function () { $('buscar').value = ''; buscar('', false); limpiarResalte(); if (marcador) { map.removeLayer(marcador); marcador = null; } };
+
+  // ------------------------------------------------------------------ botones del mapa
+  $('btn-todo').onclick = function () { encuadrar(visibles, 17); };
+  $('btn-gps').onclick = function () {
+    var b = this;
+    if (!navigator.geolocation) return aviso('Este navegador no permite usar la ubicación.');
+    b.classList.add('activo');
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      b.classList.remove('activo');
+      puntoBuscado(pos.coords.latitude, pos.coords.longitude, 'yo');
+      aviso('Precisión del GPS: ±' + Math.round(pos.coords.accuracy) + ' m');
+    }, function (err) {
+      b.classList.remove('activo');
+      aviso(err.code === 1 ? 'Permita el acceso a la ubicación en el navegador.' : 'No se pudo obtener la ubicación.', 4000);
+    }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 });
+  };
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && pila.length) volver(); });
+
+  // ------------------------------------------------------------------ guardado en el navegador (service worker)
+  var guardadoOk = false;
+  function pintarEstadoGuardado() {
+    var el = $('estado-guardado');
+    if (!el) return;
+    el.className = 'estado-guardado' + (guardadoOk ? ' ok' : '');
+    el.innerHTML = '<i></i>' + (guardadoOk ? 'Lotes guardados en este dispositivo: abre rápido y sin señal. Solo se descargan de nuevo si cambian.'
+      : location.protocol === 'file:' ? 'Abierto como archivo: para guardarlo en el dispositivo publíquelo (GitHub Pages) o use un servidor local.'
+      : 'Guardando los lotes en este dispositivo…');
+  }
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      return navigator.serviceWorker.ready;
+    }).then(function () {
+      return caches.match(new URL('data/lotes_rapido.js', location.href).href);
+    }).then(function (r) { guardadoOk = !!r; pintarEstadoGuardado(); }).catch(function () {});
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      if (e.data && e.data.tipo === 'datos-nuevos' && /lotes_rapido/.test(e.data.url)) $('nuevo').classList.add('visible');
+    });
+  }
+
+  // ------------------------------------------------------------------ arranque
+  cargarScript('data/lotes_rapido.js').then(function () {
+    return construir(window.LOTES_RAPIDO);
+  }).then(function () {
+    window.LOTES_RAPIDO = null;   // libera memoria: ya está todo en los polígonos
+    seleccion = seleccion.filter(function (q) { return cuadrillas.some(function (c) { return c.q === q; }); });
+    aplicarFiltro(!vista && seleccion.length);
+    mostrar(vistaResumen, 'min');
+    $('carga').classList.add('oculto');
+    return cargarScript('data/lotes_rapido_textos.js');
+  }).then(function () {
+    textosListos = true;
+    if (vistaActual && vistaActual !== vistaResumen) mostrar(vistaActual);
+    if ($('buscar').value.trim()) buscar($('buscar').value, false);
+  }).catch(function (e) {
+    $('carga-texto').textContent = 'No se pudieron cargar los lotes. Revise la conexión y recargue.';
+    console.error(e);
+  });
+})();
+</script>
+</body>
+</html>
